@@ -43,8 +43,8 @@
         <SignedOutputPath Condition="!HasTrailingSlash('$(SignedOutputPath)')">$(SignedOutputPath)\</SignedOutputPath>
 
         <!-- Fix Major and minor build numbers to match LLVM so it's easier to relate to the LLVM version -->
-        <BuildMajor Condition="'$(BuildMajor)'=='' AND '$(FullBuildNumber)'==''">3</BuildMajor>
-        <BuildMinor Condition="'$(BuildMinor)'=='' AND '$(FullBuildNumber)'==''">9</BuildMinor>
+        <BuildMajor Condition="'$(BuildMajor)'=='' AND '$(FullBuildNumber)'==''">5</BuildMajor>
+        <BuildMinor Condition="'$(BuildMinor)'=='' AND '$(FullBuildNumber)'==''">0</BuildMinor>
 
         <SolutionBuildExtensionsDir Condition="'$(SolutionBuildExtensionsDir)'==''">$(BuildRootDir)BuildExtensions\</SolutionBuildExtensionsDir>
         <SolutionBuildExtensionsDir Condition="!HasTrailingSlash('$(SolutionBuildExtensionsDir)')">$(SolutionBuildExtensionsDir)</SolutionBuildExtensionsDir>
