@@ -25,6 +25,7 @@
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/Bitcode/BitcodeWriterPass.h"
 #include "llvm/CodeGen/CommandFlags.h"
+#include "llvm/CodeGen/TargetPassConfig.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/DebugInfo.h"
 #include "llvm/IR/IRPrintingPasses.h"
@@ -50,17 +51,20 @@
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/ToolOutputFile.h"
+#include "llvm/Support/YAMLTraits.h"
 #include "llvm/Target/TargetMachine.h"
+#include "llvm/Transforms/Coroutines.h"
+#include "llvm/Transforms/IPO/AlwaysInliner.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Transforms/Utils/Cloning.h"
-#include "llvm-c\TargetMachine.h"
+#include "llvm-c/TargetMachine.h"
 #include <algorithm>
 #include <memory>
 using namespace llvm;
 
 static TargetMachine *unwrap( LLVMTargetMachineRef P )
 {
-    return reinterpret_cast<TargetMachine *>( P );
+    return reinterpret_cast< TargetMachine * >( P );
 }
 
 // The OptimizationList is automatically populated with registered Passes by the
@@ -79,8 +83,32 @@ static cl::opt<std::string> PassPipeline(
     cl::Hidden );
 
 static cl::opt<bool>
+NoVerify( "disable-verify", cl::desc( "Do not run the verifier" ), cl::Hidden );
+
+static cl::opt<bool>
+VerifyEach( "verify-each", cl::desc( "Verify after each transform" ) );
+
+static cl::opt<bool>
+DisableDITypeMap( "disable-debug-info-type-map",
+    cl::desc( "Don't use a uniquing type map for debug info" ) );
+
+static cl::opt<bool>
+StripDebug( "strip-debug",
+    cl::desc( "Strip debugger symbol info from translation unit" ) );
+
+static cl::opt<bool>
+DisableInline( "disable-inlining", cl::desc( "Do not run the inliner pass" ) );
+
+static cl::opt<bool>
+DisableOptimizations( "disable-opt",
+    cl::desc( "Do not run any optimization passes" ) );
+static cl::opt<bool>
 StandardLinkOpts( "std-link-opts",
     cl::desc( "Include the standard link time optimizations" ) );
+
+static cl::opt<bool>
+OptLevelO0( "O0",
+    cl::desc( "Optimization level 0. Similar to clang -O0" ) );
 
 static cl::opt<bool>
 OptLevelO1( "O1",
@@ -105,6 +133,9 @@ OptLevelO3( "O3",
 static cl::opt<unsigned>
 CodeGenOptLevel( "codegen-opt-level",
     cl::desc( "Override optimization level for codegen hooks" ) );
+
+static cl::opt<std::string>
+TargetTriple( "mtriple", cl::desc( "Override target triple for module" ) );
 
 static cl::opt<bool>
 UnitAtATime( "funit-at-a-time",
@@ -131,6 +162,10 @@ DisableSimplifyLibCalls( "disable-simplify-libcalls",
 
 static cl::opt<bool>
 AnalyzeOnly( "analyze", cl::desc( "Only perform analysis, no optimization" ) );
+static cl::opt<std::string> ClDataLayout( "data-layout",
+    cl::desc( "data layout string to use" ),
+    cl::value_desc( "layout-string" ),
+    cl::init( "" ) );
 
 static cl::opt<bool> PreserveBitcodeUseListOrder(
     "preserve-bc-uselistorder",
@@ -152,10 +187,33 @@ static cl::opt<bool> DiscardValueNames(
     cl::desc( "Discard names from Value (other than GlobalValue)." ),
     cl::init( false ), cl::Hidden );
 
+static cl::opt<bool> Coroutines(
+    "enable-coroutines",
+    cl::desc( "Enable coroutine passes." ),
+    cl::init( false ), cl::Hidden );
+
 static cl::opt<bool> PassRemarksWithHotness(
     "pass-remarks-with-hotness",
     cl::desc( "With PGO, include profile count in optimization remarks" ),
     cl::Hidden );
+static cl::opt<unsigned> PassRemarksHotnessThreshold(
+    "pass-remarks-hotness-threshold",
+    cl::desc( "Minimum profile count required for an optimization remark to be output" ),
+    cl::Hidden );
+
+static cl::opt<std::string>
+RemarksFilename( "pass-remarks-output",
+    cl::desc( "YAML output filename for pass remarks" ),
+    cl::value_desc( "filename" ) );
+
+static inline void addPass( legacy::PassManagerBase &PM, Pass *P ) {
+    // Add the pass to the pass manager...
+    PM.add( P );
+
+    // If we are verifying all of the intermediate steps, add the verifier...
+    if( VerifyEach )
+        PM.add( createVerifierPass( ) );
+}
 
 /// This routine adds optimization passes based on selected optimization level,
 /// OptLevel.
@@ -165,16 +223,21 @@ static void AddOptimizationPasses( legacy::PassManagerBase &MPM,
     legacy::FunctionPassManager &FPM,
     TargetMachine *TM, unsigned OptLevel,
     unsigned SizeLevel ) {
+    if( !NoVerify || VerifyEach )
+        FPM.add( createVerifierPass( ) ); // Verify that input is correct
 
     PassManagerBuilder Builder;
     Builder.OptLevel = OptLevel;
     Builder.SizeLevel = SizeLevel;
 
-    if( OptLevel > 1 ) {
-        Builder.Inliner = createFunctionInliningPass( OptLevel, SizeLevel );
+    if( DisableInline ) {
+        // No inlining pass
+    }
+    else if( OptLevel > 1 ) {
+        Builder.Inliner = createFunctionInliningPass( OptLevel, SizeLevel, false );
     }
     else {
-        Builder.Inliner = createAlwaysInlinerPass( );
+        Builder.Inliner = createAlwaysInlinerLegacyPass( );
     }
     Builder.DisableUnitAtATime = !UnitAtATime;
     Builder.DisableUnrollLoops = ( DisableLoopUnrolling.getNumOccurrences( ) > 0 ) ?
@@ -191,13 +254,11 @@ static void AddOptimizationPasses( legacy::PassManagerBase &MPM,
     Builder.SLPVectorize =
         DisableSLPVectorization ? false : OptLevel > 1 && SizeLevel < 2;
 
-    // Add target-specific passes that need to run as early as possible.
     if( TM )
-        Builder.addExtension(
-            PassManagerBuilder::EP_EarlyAsPossible,
-            [ & ]( const PassManagerBuilder &, legacy::PassManagerBase &PM ) {
-        TM->addEarlyAsPossiblePasses( PM );
-    } );
+        TM->adjustPassManager( Builder );
+
+    if( Coroutines )
+        addCoroutinePassesToExtensionPoints( Builder );
 
     Builder.populateFunctionPassManager( FPM );
     Builder.populateModulePassManager( MPM );
@@ -206,15 +267,58 @@ static void AddOptimizationPasses( legacy::PassManagerBase &MPM,
 static void AddStandardLinkPasses( legacy::PassManagerBase &PM ) {
     PassManagerBuilder Builder;
     Builder.VerifyInput = true;
+    if( DisableOptimizations )
+        Builder.OptLevel = 0;
 
-    Builder.Inliner = createFunctionInliningPass( );
+    if( !DisableInline )
+        Builder.Inliner = createFunctionInliningPass( );
     Builder.populateLTOPassManager( PM );
 }
+
+//===----------------------------------------------------------------------===//
+// CodeGen-related helper functions.
+//
+
+static CodeGenOpt::Level GetCodeGenOptLevel( ) {
+    if( CodeGenOptLevel.getNumOccurrences( ) )
+        return static_cast< CodeGenOpt::Level >( unsigned( CodeGenOptLevel ) );
+    if( OptLevelO1 )
+        return CodeGenOpt::Less;
+    if( OptLevelO2 )
+        return CodeGenOpt::Default;
+    if( OptLevelO3 )
+        return CodeGenOpt::Aggressive;
+    return CodeGenOpt::None;
+}
+
+// Returns the TargetMachine instance or zero if no triple is provided.
+static TargetMachine* GetTargetMachine( Triple TheTriple, StringRef CPUStr,
+    StringRef FeaturesStr,
+    const TargetOptions &Options ) {
+    std::string Error;
+    const Target *TheTarget = TargetRegistry::lookupTarget( MArch, TheTriple,
+        Error );
+    // Some modules don't specify a triple, and this is okay.
+    if( !TheTarget ) {
+        return nullptr;
+    }
+
+    return TheTarget->createTargetMachine( TheTriple.getTriple( ), CPUStr,
+        FeaturesStr, Options, getRelocModel( ),
+        CMModel, GetCodeGenOptLevel( ) );
+}
+
+#ifdef LINK_POLLY_INTO_TOOLS
+namespace polly {
+    void initializePollyPasses( llvm::PassRegistry &Registry );
+}
+#endif
 
 void LLVMInitializePassesForLegacyOpt( )
 {
     PassRegistry &Registry = *PassRegistry::getPassRegistry( );
     initializeCore( Registry );
+    initializeCoroutines( Registry );
     initializeScalarOpts( Registry );
     initializeObjCARCOpts( Registry );
     initializeVectorization( Registry );
@@ -226,31 +330,41 @@ void LLVMInitializePassesForLegacyOpt( )
     initializeTarget( Registry );
     // For codegen passes, only passes that do IR to IR transformation are
     // supported.
+    initializeScalarizeMaskedMemIntrinPass( Registry );
     initializeCodeGenPreparePass( Registry );
     initializeAtomicExpandPass( Registry );
-    initializeRewriteSymbolsPass( Registry );
+    initializeRewriteSymbolsLegacyPassPass( Registry );
     initializeWinEHPreparePass( Registry );
     initializeDwarfEHPreparePass( Registry );
-    initializeSafeStackPass( Registry );
+    initializeSafeStackLegacyPassPass( Registry );
     initializeSjLjEHPreparePass( Registry );
     initializePreISelIntrinsicLoweringLegacyPassPass( Registry );
     initializeGlobalMergePass( Registry );
     initializeInterleavedAccessPass( Registry );
+    initializeCountingFunctionInserterPass( Registry );
     initializeUnreachableBlockElimLegacyPassPass( Registry );
+    initializeExpandReductionsPass( Registry );
 }
 
-void LLVMRunLegacyOptimizer( LLVMModuleRef Mref, LLVMTargetMachineRef TMref) {
+void LLVMRunLegacyOptimizer( LLVMModuleRef Mref, LLVMTargetMachineRef TMref ) {
 
     SMDiagnostic Err;
     LLVMContext Context;
 
     Context.setDiscardValueNames( DiscardValueNames );
-    Context.enableDebugTypeODRUniquing( );
+    if( !DisableDITypeMap )
+        Context.enableDebugTypeODRUniquing( );
 
     if( PassRemarksWithHotness )
-        Context.setDiagnosticHotnessRequested( true );
+        Context.setDiagnosticsHotnessRequested( true );
+
+    if( PassRemarksHotnessThreshold )
+        Context.setDiagnosticsHotnessThreshold( PassRemarksHotnessThreshold );
 
     auto M = unwrap( Mref );
+    // Strip debug info before running the verifier.
+    if( StripDebug )
+        StripDebugInfo( *M );
 
     Triple ModuleTriple( M->getTargetTriple( ) );
     std::string CPUStr, FeaturesStr;
@@ -268,6 +382,7 @@ void LLVMRunLegacyOptimizer( LLVMModuleRef Mref, LLVMTargetMachineRef TMref) {
     // The -disable-simplify-libcalls flag actually disables all builtin optzns.
     if( DisableSimplifyLibCalls )
         TLII.disableAllFunctions( );
+
     Passes.add( new TargetLibraryInfoWrapperPass( TLII ) );
 
     // Add internal analysis passes from the target machine.
@@ -275,12 +390,19 @@ void LLVMRunLegacyOptimizer( LLVMModuleRef Mref, LLVMTargetMachineRef TMref) {
         : TargetIRAnalysis( ) ) );
 
     std::unique_ptr<legacy::FunctionPassManager> FPasses;
-    if( OptLevelO1 || OptLevelO2 || OptLevelOs || OptLevelOz || OptLevelO3 ) {
+    if( OptLevelO0 || OptLevelO1 || OptLevelO2 || OptLevelOs || OptLevelOz ||
+        OptLevelO3 ) {
         FPasses.reset( new legacy::FunctionPassManager( M ) );
         FPasses->add( createTargetTransformInfoWrapperPass(
             TM ? TM->getTargetIRAnalysis( ) : TargetIRAnalysis( ) ) );
     }
 
+    if( TM ) {
+        // FIXME: We should dyn_cast this when supported.
+        auto &LTM = static_cast< LLVMTargetMachine & >( *TM );
+        Pass *TPC = LTM.createPassConfig( Passes );
+        Passes.add( TPC );
+    }
     // Create a new optimization pass for each one specified on the command line
     for( unsigned i = 0; i < PassList.size( ); ++i ) {
         if( StandardLinkOpts &&
@@ -289,6 +411,10 @@ void LLVMRunLegacyOptimizer( LLVMModuleRef Mref, LLVMTargetMachineRef TMref) {
             StandardLinkOpts = false;
         }
 
+        if( OptLevelO0 && OptLevelO0.getPosition( ) < PassList.getPosition( i ) ) {
+            AddOptimizationPasses( Passes, *FPasses, TM, 0, 0 );
+            OptLevelO0 = false;
+        }
         if( OptLevelO1 && OptLevelO1.getPosition( ) < PassList.getPosition( i ) ) {
             AddOptimizationPasses( Passes, *FPasses, TM, 1, 0 );
             OptLevelO1 = false;
@@ -316,14 +442,16 @@ void LLVMRunLegacyOptimizer( LLVMModuleRef Mref, LLVMTargetMachineRef TMref) {
 
         const PassInfo *PassInf = PassList[ i ];
         Pass *P = nullptr;
-        if( PassInf->getTargetMachineCtor( ) )
-            P = PassInf->getTargetMachineCtor( )( TM );
-        else if( PassInf->getNormalCtor( ) )
+        if( PassInf->getNormalCtor( ) )
             P = PassInf->getNormalCtor( )( );
-
+        else {
+            //errs( ) << argv[ 0 ] << ": cannot create pass: " << PassInf->getPassName( ) << "\n";
+            //TODO: Assert or return error code/message?
+            return;
+        }
         if( P ) {
             PassKind Kind = P->getPassKind( );
-            Passes.add( P );
+            addPass( Passes, P );
         }
     }
 
@@ -331,6 +459,9 @@ void LLVMRunLegacyOptimizer( LLVMModuleRef Mref, LLVMTargetMachineRef TMref) {
         AddStandardLinkPasses( Passes );
         StandardLinkOpts = false;
     }
+
+    if( OptLevelO0 )
+        AddOptimizationPasses( Passes, *FPasses, TM, 0, 0 );
 
     if( OptLevelO1 )
         AddOptimizationPasses( Passes, *FPasses, TM, 1, 0 );
@@ -354,14 +485,9 @@ void LLVMRunLegacyOptimizer( LLVMModuleRef Mref, LLVMTargetMachineRef TMref) {
         FPasses->doFinalization( );
     }
 
-    // In run twice mode, we want to make sure the output is bit-by-bit
-    // equivalent if we run the pass manager again, so setup two buffers and
-    // a stream to write to them. Note that llc does something similar and it
-    // may be worth to abstract this out in the future.
-    SmallVector<char, 0> Buffer;
-    SmallVector<char, 0> CompileTwiceBuffer;
-    std::unique_ptr<raw_svector_ostream> BOS;
-    raw_ostream *OS = nullptr;
+    // Check that the module is well formed on completion of optimization
+    if( !NoVerify && !VerifyEach )
+        Passes.add( createVerifierPass( ) );
 
     // Now that we have all of the passes ready, run them.
     Passes.run( *M );

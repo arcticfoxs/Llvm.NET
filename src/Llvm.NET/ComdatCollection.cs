@@ -12,7 +12,7 @@ namespace Llvm.NET
         internal ComdatCollection( NativeModule module )
         {
             Module = module;
-            NativeMethods.ModuleEnumerateComdats( Module.ModuleHandle, AddComdat );
+            NativeMethods.ModuleEnumerateComdats( Module.ModuleHandle, this.AddComdat );
         }
 
         public Comdat this[ string key ]

@@ -63,7 +63,7 @@ namespace Llvm.NET.Values
 
             set
             {
-                NativeMethods.SetInitializer( ValueHandle, value?.ValueHandle ?? LLVMValueRef.Zero );
+                NativeMethods.SetInitializer( ValueHandle, value?.ValueHandle ?? new LLVMValueRef( IntPtr.Zero) );
             }
         }
 

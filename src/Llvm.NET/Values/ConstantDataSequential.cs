@@ -23,8 +23,7 @@ namespace Llvm.NET.Values
             if( !IsString )
                 throw new InvalidOperationException( "ConstantDataSequential is not a string" );
 
-            int len;
-            var strPtr = NativeMethods.GetAsString( ValueHandle, out len );
+            var strPtr = NativeMethods.GetAsString( ValueHandle, out size_t len );
             return NativeMethods.NormalizeLineEndings( strPtr, len );
         }
 

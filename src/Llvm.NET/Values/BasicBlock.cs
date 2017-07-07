@@ -12,7 +12,7 @@ namespace Llvm.NET.Values
     /// and a single exit. The exit point must be a <see cref="Terminator"/>
     /// instruction or the block is not (yet) well-formed.
     /// </remarks>
-    public class BasicBlock 
+    public class BasicBlock
         : Value
     {
         /// <summary>Function containing the block</summary>

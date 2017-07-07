@@ -5,7 +5,7 @@ using Llvm.NET.Values;
 namespace Llvm.NET.Types
 {
     /// <summary>LLVM Type</summary>
-    internal class TypeRef 
+    internal class TypeRef
         : ITypeRef
     {
         public IntPtr TypeHandle => TypeHandle_.Pointer;
@@ -141,11 +141,7 @@ namespace Llvm.NET.Types
 
         /// <summary>Builds a string representation for this type in LLVM assembly language form</summary>
         /// <returns>Formatted string for this type</returns>
-        public override string ToString( )
-        {
-            var msgString = NativeMethods.PrintTypeToString( TypeHandle_ );
-            return NativeMethods.MarshalMsg( msgString );
-        }
+        public override string ToString( ) => NativeMethods.PrintTypeToString( TypeHandle_ );
 
         internal TypeRef( LLVMTypeRef typeRef )
         {
@@ -154,7 +150,7 @@ namespace Llvm.NET.Types
                 throw new ArgumentNullException( nameof( typeRef ) );
 
 #if DEBUG
-            var ctx = Llvm.NET.Context.GetContextFor( typeRef );
+            var ctx = Context.GetContextFor( typeRef );
             ctx.AssertTypeNotInterned( typeRef );
 #endif
         }
@@ -174,7 +170,7 @@ namespace Llvm.NET.Types
 
         private static ITypeRef StaticFactory( LLVMTypeRef typeRef )
         {
-            var kind = (TypeKind)NativeMethods.GetTypeKind( typeRef );
+            var kind = ( TypeKind )NativeMethods.GetTypeKind( typeRef );
             switch( kind )
             {
             case TypeKind.Struct:

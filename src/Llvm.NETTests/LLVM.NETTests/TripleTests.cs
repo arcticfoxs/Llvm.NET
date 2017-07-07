@@ -1,7 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Llvm.NET.Tests
 {
@@ -113,6 +111,7 @@ namespace Llvm.NET.Tests
                     { TripleSubArchType.ARMSubArch_v8_2a,        "v8.2a" },
                     { TripleSubArchType.ARMSubArch_v8_1a,        "v8.1a" },
                     { TripleSubArchType.ARMSubArch_v8,           "v8" },
+                    { TripleSubArchType.ARMSubArch_v8r,          "v8r" },
                     { TripleSubArchType.ARMSubArch_v8m_baseline, "v8m.base" },
                     { TripleSubArchType.ARMSubArch_v8m_mainline, "v8m.main" },
                     { TripleSubArchType.ARMSubArch_v7,           "v7" },

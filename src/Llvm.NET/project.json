@@ -3,7 +3,7 @@
     "PdbGit": "3.0.38"
   },
   "frameworks": {
-    "net462": {}
+    "net470": {}
   },
   "runtimes": {
     "win": {}

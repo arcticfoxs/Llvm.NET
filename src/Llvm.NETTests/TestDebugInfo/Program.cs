@@ -13,7 +13,7 @@ namespace TestDebugInfo
     {
         static ITargetDependentDetails TargetDetails;
 
-        static AttributeSet TargetDependentAttributes { get; set; }
+        static IAttributeSet TargetDependentAttributes { get; set; }
 
         // obviously this is not clang but using an identical name helps in diff with actual clang output
         const string VersionIdentString = "clang version 3.8.0 (branches/release_38)";
@@ -88,11 +88,13 @@ namespace TestDebugInfo
 
                 var bar = module.AddGlobal( fooType, false, 0, barValue, "bar" );
                 bar.Alignment = targetData.AbiAlignmentOf( fooType );
-                module.DIBuilder.CreateGlobalVariable( cu, "bar", string.Empty, diFile, 8, fooType.DIType, false, bar );
+                // TODO: Figure out support for new GlobalVariableExpression, which internally creates a DIGlobalVariable
+                //module.DIBuilder.CreateGlobalVariable( cu, "bar", string.Empty, diFile, 8, fooType.DIType, false, bar );
 
                 var baz = module.AddGlobal( fooType, false, Linkage.Common, Constant.NullValueFor( fooType ), "baz" );
                 baz.Alignment = targetData.AbiAlignmentOf( fooType );
-                module.DIBuilder.CreateGlobalVariable( cu, "baz", string.Empty, diFile, 9, fooType.DIType, false, baz );
+                // TODO: Figure out support for new GlobalVariableExpression, which internally creates a DIGlobalVariable
+                //module.DIBuilder.CreateGlobalVariable( cu, "baz", string.Empty, diFile, 9, fooType.DIType, false, baz );
 
                 // add module flags and compiler identifiers...
                 // this can technically occur at any point, though placing it here makes
@@ -159,7 +161,7 @@ namespace TestDebugInfo
                                                   , scopeLine: 24
                                                   , debugFlags: DebugInfoFlags.None
                                                   , isOptimized: false
-                                                  ).AddAttributes( AttributeKind.NoUnwind )
+                                                  ).AddAttributes( FunctionAttributeIndex.Function, AttributeKind.NoUnwind )
                                                    .AddAttributes( FunctionAttributeIndex.Function, TargetDependentAttributes );
             return doCopyFunc;
         }
@@ -171,7 +173,7 @@ namespace TestDebugInfo
                                                , DebugPointerType fooPtr
                                                )
         {
-            // Since the first parameter is passed by value 
+            // Since the first parameter is passed by value
             // using the pointer + alloca + memcopy pattern, the actual
             // source, and therefore debug, signature is NOT a pointer.
             // However, that usage would create a signature with two
@@ -197,7 +199,7 @@ namespace TestDebugInfo
                                                 , debugFlags: DebugInfoFlags.Prototyped
                                                 , isOptimized: false
                                                 ).Linkage( Linkage.Internal ) // static function
-                                                 .AddAttributes( AttributeKind.NoUnwind, AttributeKind.InlineHint )
+                                                 .AddAttributes( FunctionAttributeIndex.Function, AttributeKind.NoUnwind, AttributeKind.InlineHint )
                                                  .AddAttributes( FunctionAttributeIndex.Function, TargetDependentAttributes );
 
             TargetDetails.AddABIAttributesForByValueStructure( copyFunc, 0 );

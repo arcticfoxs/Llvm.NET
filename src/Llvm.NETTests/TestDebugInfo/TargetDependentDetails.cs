@@ -9,7 +9,7 @@ namespace TestDebugInfo
         string Triple { get; }
         string Cpu { get; }
         string Features { get; }
-        AttributeSet BuildTargetDependentFunctionAttributes( Context ctx );
+        IAttributeSet BuildTargetDependentFunctionAttributes( Context ctx );
         void AddABIAttributesForByValueStructure( Function function, int paramIndex );
         void AddModuleFlags( NativeModule module );
     }

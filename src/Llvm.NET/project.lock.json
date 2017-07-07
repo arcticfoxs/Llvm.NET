@@ -1,15 +1,22 @@
 {
-  "locked": false,
   "version": 2,
   "targets": {
-    ".NETFramework,Version=v4.6.2": {
+    ".NETFramework,Version=v4.7": {
       "PdbGit/3.0.38": {
-        "type": "package"
+        "type": "package",
+        "build": {
+          "build/PdbGit.props": {},
+          "build/PdbGit.targets": {}
+        }
       }
     },
-    ".NETFramework,Version=v4.6.2/win": {
+    ".NETFramework,Version=v4.7/win": {
       "PdbGit/3.0.38": {
-        "type": "package"
+        "type": "package",
+        "build": {
+          "build/PdbGit.props": {},
+          "build/PdbGit.targets": {}
+        }
       }
     }
   },
@@ -17,6 +24,7 @@
     "PdbGit/3.0.38": {
       "sha512": "yZBv+nOAUK6UWi0jTl2j/UPXEx4+9VMPRgtJh8Ewt+TPVEMB5X9r/8/GcBldiW5jzwMKJKaOwa3hCULMQetsrQ==",
       "type": "package",
+      "path": "pdbgit/3.0.38",
       "files": [
         "PdbGit.3.0.38.nupkg.sha512",
         "PdbGit.nuspec",
@@ -44,6 +52,29 @@
     "": [
       "PdbGit >= 3.0.38"
     ],
-    ".NETFramework,Version=v4.6.2": []
+    ".NETFramework,Version=v4.7": []
+  },
+  "packageFolders": {
+    "C:\\Users\\smaillet\\.nuget\\packages\\": {}
+  },
+  "project": {
+    "restore": {
+      "projectUniqueName": "D:\\GitHub\\NETMF\\Llvm.NET\\src\\Llvm.NET\\Llvm.NET.csproj",
+      "projectName": "Llvm.NET",
+      "projectPath": "D:\\GitHub\\NETMF\\Llvm.NET\\src\\Llvm.NET\\Llvm.NET.csproj",
+      "projectJsonPath": "D:\\GitHub\\NETMF\\Llvm.NET\\src\\Llvm.NET\\project.json",
+      "projectStyle": "ProjectJson"
+    },
+    "dependencies": {
+      "PdbGit": "3.0.38"
+    },
+    "frameworks": {
+      "net47": {}
+    },
+    "runtimes": {
+      "win": {
+        "#import": []
+      }
+    }
   }
 }

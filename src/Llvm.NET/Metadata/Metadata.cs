@@ -12,7 +12,7 @@ namespace Llvm.NET
     {
         // ideally this would be protected + internal but C#
         // doesn't have any syntax to allow such a thing so it
-        // is internal and internal code should ensure it is 
+        // is internal and internal code should ensure it is
         // only ever used by derived type constructors
         internal /*protected*/ LlvmMetadata( LLVMMetadataRef handle )
         {
@@ -42,7 +42,7 @@ namespace Llvm.NET
             if( MetadataHandle.Pointer == IntPtr.Zero )
                 return string.Empty;
 
-            return NativeMethods.MarshalMsg( NativeMethods.MetadataAsString( MetadataHandle ) );
+            return NativeMethods.MetadataAsString( MetadataHandle );
         }
 
         internal LLVMMetadataRef MetadataHandle { get; /*protected*/ set; }
@@ -68,6 +68,7 @@ namespace Llvm.NET
             MDTuple,                      // HANDLE_MDNODE_LEAF_UNIQUABLE(MDTuple)
             DILocation,                   // HANDLE_SPECIALIZED_MDNODE_LEAF_UNIQUABLE(DILocation)
             DIExpression,                 // HANDLE_SPECIALIZED_MDNODE_LEAF_UNIQUABLE(DIExpression)
+            DIGlobalVariableExpression,   // HANDLE_SPECIALIZED_MDNODE_LEAF_UNIQUABLE(DIGlobalVariableExpression)
             //DINode,                     // HANDLE_SPECIALIZED_MDNODE_BRANCH(DINode)
             GenericDINode,                // HANDLE_SPECIALIZED_MDNODE_LEAF_UNIQUABLE(GenericDINode)
             DISubrange,                   // HANDLE_SPECIALIZED_MDNODE_LEAF_UNIQUABLE(DISubrange)
@@ -113,6 +114,12 @@ namespace Llvm.NET
 
             case MetadataKind.DILocation:
                 return new DILocation( handle );
+
+            case MetadataKind.DIExpression:
+                return new DIExpression( handle );
+
+            //case MetadataKind.DIGlobalVariableExpression:
+            //    return new DIGlobalVariableExpression( handle );
 
             case MetadataKind.GenericDINode:
                 return new GenericDINode( handle );
@@ -167,9 +174,6 @@ namespace Llvm.NET
 
             case MetadataKind.DILocalVariable:
                 return new DILocalVariable( handle );
-
-            case MetadataKind.DIExpression:
-                return new DIExpression( handle );
 
             case MetadataKind.DIObjCProperty:
                 return new DIObjCProperty( handle );

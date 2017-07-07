@@ -7,7 +7,7 @@ namespace Llvm.NET.DebugInfo
     /// <remarks>
     /// This class provides a binding between an LLVM type and a corresponding <see cref="DIBasicType"/>.
     /// In LLVM all primitive types are unnamed and interned. That is, any use of an i8 is always the same
-    /// type. However, at the source language level it is common to have named primitive types that map 
+    /// type. However, at the source language level it is common to have named primitive types that map
     /// to the same underlying LLVM. For example, in C and C++ char maps to i8 but so does unsigned char
     /// (LLVM integral types don't have signed vs unsigned). This class is designed to handle this sort
     /// of one to many mapping of the lower level LLVM types to source level debugging types. Each
@@ -56,7 +56,6 @@ namespace Llvm.NET.DebugInfo
             DIType = module.DIBuilder
                            .CreateBasicType( name
                                            , module.Layout.BitSizeOf( llvmType )
-                                           , module.Layout.AbiBitAlignmentOf( llvmType )
                                            , encoding
                                            );
         }

@@ -32,7 +32,7 @@ namespace TestDebugInfo
             var layout = function.ParentModule.Layout;
             function.AddAttributes( FunctionAttributeIndex.Parameter0 + paramIndex
                                   , AttributeKind.ByVal.ToAttributeValue( function.Context )
-                                  , new AttributeValue( function.Context, AttributeKind.Alignment, layout.AbiAlignmentOf( argType.ElementType ) )
+                                  , function.Context.CreateAttribute( AttributeKind.Alignment, layout.AbiAlignmentOf( argType.ElementType ) )
                                   );
         }
 
@@ -43,22 +43,22 @@ namespace TestDebugInfo
             module.AddModuleFlag( ModuleFlagBehavior.Error, "min_enum_size", 4 );
         }
 
-        public AttributeSet BuildTargetDependentFunctionAttributes( Context ctx )
+        public IAttributeSet BuildTargetDependentFunctionAttributes( Context ctx )
         {
-            var bldr = new AttributeBuilder( );
+            var bldr = new AttributeSet( ctx );
 
-            bldr.Add( "disable-tail-calls", "false" );
-            bldr.Add( "less-precise-fpmad", "false" );
-            bldr.Add( "no-frame-pointer-elim", "true" );
-            bldr.Add( "no-frame-pointer-elim-non-leaf" );
-            bldr.Add( "no-infs-fp-math", "false" );
-            bldr.Add( "no-nans-fp-math", "false" );
-            bldr.Add( "stack-protector-buffer-size", "8" );
-            bldr.Add( "target-cpu", Cpu );
-            bldr.Add( "target-features", Features );
-            bldr.Add( "unsafe-fp-math", "false" );
-            bldr.Add( "use-soft-float", "false" );
-            return bldr.ToAttributeSet( FunctionAttributeIndex.Function, ctx );
+            bldr[ FunctionAttributeIndex.Function ].Add( "disable-tail-calls", "false" );
+            bldr[ FunctionAttributeIndex.Function ].Add( "less-precise-fpmad", "false" );
+            bldr[ FunctionAttributeIndex.Function ].Add( "no-frame-pointer-elim", "true" );
+            bldr[ FunctionAttributeIndex.Function ].Add( "no-frame-pointer-elim-non-leaf", string.Empty );
+            bldr[ FunctionAttributeIndex.Function ].Add( "no-infs-fp-math", "false" );
+            bldr[ FunctionAttributeIndex.Function ].Add( "no-nans-fp-math", "false" );
+            bldr[ FunctionAttributeIndex.Function ].Add( "stack-protector-buffer-size", "8" );
+            bldr[ FunctionAttributeIndex.Function ].Add( "target-cpu", Cpu );
+            bldr[ FunctionAttributeIndex.Function ].Add( "target-features", Features );
+            bldr[ FunctionAttributeIndex.Function ].Add( "unsafe-fp-math", "false" );
+            bldr[ FunctionAttributeIndex.Function ].Add( "use-soft-float", "false" );
+            return null;
         }
     }
 }

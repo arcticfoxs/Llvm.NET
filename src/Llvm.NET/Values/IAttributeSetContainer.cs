@@ -1,19 +1,22 @@
 ﻿namespace Llvm.NET.Values
 {
+    public interface IAttributeSet
+    {
+        /// <summary>Attributes for this container</summary>
+        IAttributeCollection this[ FunctionAttributeIndex index ] { get; }
+    }
+
     /// <summary>Interface for values containing an AttributeSet</summary>
     /// <remarks>
-    /// This is used to allow the <see cref="AttributeSetContainer"/> extension
-    /// to act as mutators for the otherwise immutable <see cref="AttributeSet"/>.
-    /// Each method of the extension class will read the attribute set from the container
-    /// and create a new set based on the parameters (adding or removing attributes from the set)
-    /// producing a new attributeSet that is then re-assigned back to the container. 
+    /// This is used to allow consistent manipulation of attributes in
+    /// a manner that is the least disruptive to existing consumers. The
+    /// Attribute support went through some major changes from ~3.6->5.0.
+    /// Which, has caused a significant amount of churn in the this code
+    /// base to keep up without causing mass re-writes of existing code.
     /// </remarks>
     public interface IAttributeSetContainer
     {
         /// <summary>Attributes for this container</summary>
-        AttributeSet Attributes { get; set; }
-
-        /// <summary>Context for the Attributes</summary>
-        Context Context { get; }
+        IAttributeSet Attributes { get; }
     }
 }

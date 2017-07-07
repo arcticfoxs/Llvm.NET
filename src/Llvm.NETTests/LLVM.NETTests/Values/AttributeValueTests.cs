@@ -9,39 +9,18 @@ namespace Llvm.NET.Values.Tests
         private const string TestTargetDependentAttributeName = "TestCustom";
 
         [TestMethod]
-        public void AttributeValueTest( )
-        {
-            var value = new AttributeValue( );
-            Assert.IsFalse( value.IntegerValue.HasValue );
-            Assert.IsFalse( value.IsEnum );
-            Assert.IsFalse( value.IsInt );
-            Assert.IsFalse( value.IsString );
-            Assert.IsNull( value.Name );
-            Assert.IsNull( value.StringValue );
-            Assert.AreEqual( AttributeKind.None, value.Kind );
-        }
-
-        [TestMethod]
-        [ExpectedArgumentException("context", ExpectedExceptionMessage = "Provided context cannot be null or disposed")]
-        public void AttributeValueConstructorNoContextTest( )
-        {
-            var value = new AttributeValue( null, AttributeKind.AlwaysInline );
-        }
-
-        [TestMethod]
         public void AttributeValueTestEnum( )
         {
             using( var ctx = new Context( ) )
             {
-                var value = new AttributeValue(ctx, AttributeKind.AlwaysInline );
+                var value = ctx.CreateAttribute( AttributeKind.AlwaysInline );
                 Assert.IsFalse( value.IntegerValue.HasValue );
                 Assert.IsFalse( value.IsInt );
                 Assert.IsFalse( value.IsString );
-                Assert.IsNull( value.Name );
+                Assert.AreEqual( "alwaysinline", value.Name );
                 Assert.IsNull( value.StringValue );
                 Assert.IsTrue( value.IsEnum );
-                Assert.IsTrue( value.Kind.HasValue );
-                Assert.AreEqual( AttributeKind.AlwaysInline, value.Kind.Value );
+                Assert.AreEqual( AttributeKind.AlwaysInline, value.Kind );
             }
         }
 
@@ -50,15 +29,14 @@ namespace Llvm.NET.Values.Tests
         {
             using( var ctx = new Context( ) )
             {
-                var value = new AttributeValue(ctx, AttributeKind.DereferenceableOrNull, 1234ul );
+                var value = ctx.CreateAttribute( AttributeKind.DereferenceableOrNull, 1234ul );
                 Assert.IsTrue( value.IntegerValue.HasValue );
                 Assert.IsTrue( value.IsInt );
                 Assert.IsFalse( value.IsString );
-                Assert.IsNull( value.Name );
+                Assert.AreEqual( "dereferenceable_or_null", value.Name );
                 Assert.IsNull( value.StringValue );
                 Assert.IsTrue( value.IsEnum );
-                Assert.IsTrue( value.Kind.HasValue );
-                Assert.AreEqual( AttributeKind.DereferenceableOrNull, value.Kind.Value );
+                Assert.AreEqual( AttributeKind.DereferenceableOrNull, value.Kind );
                 Assert.AreEqual( value.IntegerValue, 1234ul );
             }
         }
@@ -68,14 +46,14 @@ namespace Llvm.NET.Values.Tests
         {
             using( var ctx = new Context( ) )
             {
-                var value = new AttributeValue( ctx, TestTargetDependentAttributeName );
+                var value = ctx.CreateAttribute( TestTargetDependentAttributeName );
                 Assert.IsFalse( value.IntegerValue.HasValue );
                 Assert.IsFalse( value.IsInt );
                 Assert.IsTrue( value.IsString );
                 Assert.AreEqual( TestTargetDependentAttributeName, value.Name );
                 Assert.IsTrue( string.IsNullOrWhiteSpace( value.StringValue ) );
                 Assert.IsFalse( value.IsEnum );
-                Assert.IsFalse( value.Kind.HasValue );
+                Assert.AreEqual( AttributeKind.None, value.Kind );
             }
         }
 
@@ -88,11 +66,10 @@ namespace Llvm.NET.Values.Tests
                 Assert.IsFalse( value.IntegerValue.HasValue );
                 Assert.IsFalse( value.IsInt );
                 Assert.IsFalse( value.IsString );
-                Assert.IsNull( value.Name );
+                Assert.AreEqual( "noinline", value.Name );
                 Assert.IsNull( value.StringValue );
                 Assert.IsTrue( value.IsEnum );
-                Assert.IsTrue( value.Kind.HasValue );
-                Assert.AreEqual( AttributeKind.NoInline, value.Kind.Value );
+                Assert.AreEqual( AttributeKind.NoInline, value.Kind );
             }
         }
 
@@ -108,7 +85,7 @@ namespace Llvm.NET.Values.Tests
                 Assert.AreEqual( TestTargetDependentAttributeName, value.Name );
                 Assert.IsTrue( string.IsNullOrWhiteSpace( value.StringValue ) );
                 Assert.IsFalse( value.IsEnum );
-                Assert.IsFalse( value.Kind.HasValue );
+                Assert.AreEqual( AttributeKind.None, value.Kind );
             }
         }
 

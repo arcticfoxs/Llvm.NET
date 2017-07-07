@@ -52,17 +52,11 @@ namespace Llvm.NET.Types
             NativeMethods.StructSetBody( TypeHandle_, out llvmArgs[ 0 ], argsLength, packed );
         }
 
-        public string Name
-        {
-            get
-            {
-                var ptr =  NativeMethods.GetStructName( TypeHandle_ );
-                return Marshal.PtrToStringAnsi( ptr );
-            }
-        }
+        public string Name => Marshal.PtrToStringAnsi( NativeMethods.GetStructName( TypeHandle_ ) );
 
         public bool IsOpaque => NativeMethods.IsOpaqueStruct( TypeHandle_ );
         public bool IsPacked => NativeMethods.IsPackedStruct( TypeHandle_ );
+
         public IReadOnlyList<ITypeRef> Members
         {
             get

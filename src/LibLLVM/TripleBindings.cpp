@@ -73,6 +73,9 @@ ARM::ArchKind MapEnum( LLVMTripleSubArchType from )
     case LlvmTripleSubArchType_ARMSubArch_v8:
         return ARM::ArchKind::AK_ARMV8A;
 
+    case LlvmTripleSubArchType_ARMSubArch_v8r:
+        return ARM::ArchKind::AK_ARMV8R;
+
     case LlvmTripleSubArchType_ARMSubArch_v8m_baseline:
         return ARM::ArchKind::AK_ARMV8MBaseline;
 
@@ -93,6 +96,9 @@ ARM::ArchKind MapEnum( LLVMTripleSubArchType from )
 
     case LlvmTripleSubArchType_ARMSubArch_v7k:
         return ARM::ArchKind::AK_ARMV7K;
+
+    case LlvmTripleSubArchType_ARMSubArch_v7ve:
+        return ARM::ArchKind::AK_ARMV7VE;
 
     case LlvmTripleSubArchType_ARMSubArch_v6:
         return ARM::ArchKind::AK_ARMV6;
@@ -197,7 +203,7 @@ char const* LLVMTripleGetArchTypeName( LLVMTripleArchType type )
     if( llvmArchType > Triple::ArchType::LastArchType )
         llvmArchType = Triple::ArchType::UnknownArch;
 
-    return LLVMCreateMessage( Triple::getArchTypeName( llvmArchType ) );
+    return LLVMCreateMessage( Triple::getArchTypeName( llvmArchType ).data() );
 }
 
 char const* LLVMTripleGetSubArchTypeName( LLVMTripleSubArchType type )
@@ -227,7 +233,7 @@ char const* LLVMTripleGetVendorTypeName( LLVMTripleVendorType vendor )
     if( llvmVendorType > Triple::VendorType::LastVendorType )
         llvmVendorType = Triple::VendorType::UnknownVendor;
 
-    return LLVMCreateMessage( Triple::getVendorTypeName( llvmVendorType ) );
+    return LLVMCreateMessage( Triple::getVendorTypeName( llvmVendorType ).data() );
 }
 
 char const* LLVMTripleGetOsTypeName( LLVMTripleOSType osType )
@@ -236,7 +242,7 @@ char const* LLVMTripleGetOsTypeName( LLVMTripleOSType osType )
     if( llvmOsType > Triple::OSType::LastOSType )
         llvmOsType = Triple::OSType::UnknownOS;
 
-    return LLVMCreateMessage( Triple::getOSTypeName( llvmOsType ) );
+    return LLVMCreateMessage( Triple::getOSTypeName( llvmOsType ).data() );
 }
 
 char const* LLVMTripleGetEnvironmentTypeName( LLVMTripleEnvironmentType environmentType )
@@ -245,7 +251,7 @@ char const* LLVMTripleGetEnvironmentTypeName( LLVMTripleEnvironmentType environm
     if( llvmEnvironmentType > Triple::EnvironmentType::LastEnvironmentType )
         llvmEnvironmentType = Triple::EnvironmentType::UnknownEnvironment;
 
-    return LLVMCreateMessage( Triple::getEnvironmentTypeName( llvmEnvironmentType ) );
+    return LLVMCreateMessage( Triple::getEnvironmentTypeName( llvmEnvironmentType ).data() );
 }
 
 char const* LLVMTripleGetObjectFormatTypeName( LLVMTripleObjectFormatType objectFormatType )

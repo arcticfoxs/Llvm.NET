@@ -12,7 +12,7 @@ namespace Llvm.NET.Values
     /// <summary>LLVM Function definition</summary>
     public class Function
         : GlobalObject
-        , IAttributeSetContainer
+        , IValueWithAttributes
     {
         /// <summary>Signature type of the function</summary>
         public IFunctionType Signature => TypeRef.FromHandle<IFunctionType>( NativeMethods.GetElementType( NativeMethods.TypeOf( ValueHandle ) ) );
@@ -77,12 +77,12 @@ namespace Llvm.NET.Values
                 if( !NativeMethods.FunctionHasPersonalityFunction( ValueHandle ) )
                     return null;
 
-                return FromHandle<Function>( NativeMethods.GetPersonalityFunction( ValueHandle ) );
+                return FromHandle<Function>( NativeMethods.GetPersonalityFn( ValueHandle ) );
             }
 
             set
             {
-                NativeMethods.SetPersonalityFunction( ValueHandle, value?.ValueHandle ?? LLVMValueRef.Zero );
+                NativeMethods.SetPersonalityFn( ValueHandle, value?.ValueHandle ?? new LLVMValueRef( IntPtr.Zero ));
             }
         }
 
@@ -108,8 +108,7 @@ namespace Llvm.NET.Values
         {
             get
             {
-                var nativePtr = NativeMethods.GetGC( ValueHandle );
-                return Marshal.PtrToStringAnsi( nativePtr );
+                return Marshal.PtrToStringAnsi( NativeMethods.GetGC( ValueHandle ) );
             }
             set
             {
@@ -117,27 +116,14 @@ namespace Llvm.NET.Values
             }
         }
 
+        public IAttributeSet Attributes { get; }
+
         /// <summary>Verifies the function is valid and all blocks properly terminated</summary>
         public void Verify( )
         {
-            IntPtr errMsgPtr;
-            var status = NativeMethods.VerifyFunctionEx( ValueHandle, LLVMVerifierFailureAction.LLVMReturnStatusAction, out errMsgPtr );
+            var status = NativeMethods.VerifyFunctionEx( ValueHandle, LLVMVerifierFailureAction.LLVMReturnStatusAction, out string errMsg );
             if( status )
-                throw new InternalCodeGeneratorException( NativeMethods.MarshalMsg( errMsgPtr ) );
-        }
-
-        public AttributeSet Attributes
-        {
-            get
-            {
-                return new AttributeSet( NativeMethods.GetFunctionAttributeSet( ValueHandle ) );
-            }
-
-            set
-            {
-                // TODO: verify that the attribute set doesn't contain any attributes for parameter indices not available in this function.
-                NativeMethods.SetFunctionAttributeSet( ValueHandle, value.NativeAttributeSet );
-            }
+                throw new InternalCodeGeneratorException( errMsg );
         }
 
         /// <summary>Add a new basic block to the beginning of a function</summary>
@@ -172,7 +158,7 @@ namespace Llvm.NET.Values
         /// <param name="name">Block name (label) to look for or create</param>
         /// <returns><see cref="BasicBlock"/> If the block was created it is appended to the end of function</returns>
         /// <remarks>
-        /// This method tries to find a block by it's name and returns it if found, if not found a new block is 
+        /// This method tries to find a block by it's name and returns it if found, if not found a new block is
         /// created and appended to the current function.
         /// </remarks>
         public BasicBlock FindOrCreateNamedBlock( string name )
@@ -185,9 +171,59 @@ namespace Llvm.NET.Values
             return retVal;
         }
 
+        public void Add( FunctionAttributeIndex index, AttributeValue attrib )
+        {
+            if( attrib == null )
+                throw new ArgumentNullException( nameof( attrib ) );
+
+            attrib.VerifyValidOn( index, this );
+
+            NativeMethods.AddAttributeAtIndex( ValueHandle, ( LLVMAttributeIndex )index, attrib.NativeAttribute );
+        }
+
+        public uint GetAttributeCount( FunctionAttributeIndex index )
+        {
+            return NativeMethods.GetAttributeCountAtIndex( ValueHandle, ( LLVMAttributeIndex )index );
+        }
+
+        public IEnumerable<AttributeValue> GetAttributes( FunctionAttributeIndex index )
+        {
+            var count = GetAttributeCount( index );
+            if( count == 0 )
+                return Enumerable.Empty<AttributeValue>( );
+
+            var buffer = new LLVMAttributeRef[ count ];
+            NativeMethods.GetAttributesAtIndex( ValueHandle, ( LLVMAttributeIndex )index, out buffer[0] );
+            return from attribRef in buffer
+                   select AttributeValue.FromHandle( Context, attribRef );
+        }
+
+        public AttributeValue GetAttribute( FunctionAttributeIndex index, AttributeKind kind )
+        {
+            var handle = NativeMethods.GetEnumAttributeAtIndex( ValueHandle, ( LLVMAttributeIndex )index, kind.GetEnumAttributeId( ) );
+            return AttributeValue.FromHandle( Context, handle );
+        }
+
+        public AttributeValue GetAttribute( FunctionAttributeIndex index, string name )
+        {
+            var handle = NativeMethods.GetStringAttributeAtIndex( ValueHandle, ( LLVMAttributeIndex )index, name, (uint)name.Length );
+            return AttributeValue.FromHandle( Context, handle );
+        }
+
+        public void Remove( FunctionAttributeIndex index, AttributeKind kind )
+        {
+            NativeMethods.RemoveEnumAttributeAtIndex( ValueHandle, ( LLVMAttributeIndex )index, kind.GetEnumAttributeId( ) );
+        }
+
+        public void Remove( FunctionAttributeIndex index, string name )
+        {
+            NativeMethods.RemoveStringAttributeAtIndex( ValueHandle, ( LLVMAttributeIndex )index, name, ( uint )name.Length );
+        }
+
         internal Function( LLVMValueRef valueRef )
             : base( valueRef )
         {
+            Attributes = new ValueAttributes( this );
         }
     }
 }

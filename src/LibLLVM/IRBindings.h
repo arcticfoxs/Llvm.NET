@@ -39,7 +39,6 @@ void LLVMGetVersionInfo( LLVMVersionInfo* pVersionInfo );
 typedef struct LLVMOpaqueMetadata* LLVMMetadataRef;
 typedef struct LLVMOpaqueMDOperand* LLVMMDOperandRef;
 
-
 LLVMMetadataRef LLVMConstantAsMetadata(LLVMValueRef Val);
 LLVMMetadataRef LLVMMDString2(LLVMContextRef C, const char *Str, unsigned SLen);
 LLVMMetadataRef LLVMMDNode2(LLVMContextRef C, LLVMMetadataRef *MDs, unsigned Count);
@@ -69,17 +68,6 @@ LLVMBool LLVMFunctionHasPersonalityFunction( LLVMValueRef function );
 
 #ifdef __cplusplus
 }
-
-namespace llvm {
-
-DEFINE_ISA_CONVERSION_FUNCTIONS(Metadata, LLVMMetadataRef)
-
-inline Metadata **unwrap(LLVMMetadataRef *Vals) {
-  return reinterpret_cast<Metadata**>(Vals);
-}
-
-}
-
 #endif
 
 #endif

@@ -71,12 +71,9 @@ namespace Llvm.NET
         /// <returns>Target for the given triple</returns>
         public static Target FromTriple( string targetTriple )
         {
-            LLVMTargetRef targetHandle;
-            IntPtr msgPtr;
-            if( 0 != NativeMethods.GetTargetFromTriple( targetTriple, out targetHandle, out msgPtr ).Value )
+            if( 0 != NativeMethods.GetTargetFromTriple( targetTriple, out LLVMTargetRef targetHandle, out string errorMessag ).Value )
             {
-                var msg = NativeMethods.MarshalMsg( msgPtr );
-                throw new InternalCodeGeneratorException( msg );
+                throw new InternalCodeGeneratorException( errorMessag );
             }
 
             return FromHandle( targetHandle );

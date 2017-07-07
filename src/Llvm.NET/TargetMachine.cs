@@ -10,13 +10,13 @@ namespace Llvm.NET
         public Target Target => Target.FromHandle( NativeMethods.GetTargetMachineTarget( TargetMachineHandle ) );
 
         /// <summary>Target triple describing this machine</summary>
-        public string Triple => NativeMethods.MarshalMsg( NativeMethods.GetTargetMachineTriple( TargetMachineHandle ) );
+        public string Triple => NativeMethods.GetTargetMachineTriple( TargetMachineHandle );
 
         /// <summary>CPU Type for this machine</summary>
-        public string Cpu => NativeMethods.MarshalMsg( NativeMethods.GetTargetMachineCPU( TargetMachineHandle ) );
+        public string Cpu => NativeMethods.GetTargetMachineCPU( TargetMachineHandle );
 
         /// <summary>CPU specific features for this machine</summary>
-        public string Features => NativeMethods.MarshalMsg( NativeMethods.GetTargetMachineFeatureString( TargetMachineHandle ) );
+        public string Features => NativeMethods.GetTargetMachineFeatureString( TargetMachineHandle );
 
         /// <summary>Gets Layout information for this machine</summary>
         public DataLayout TargetData
@@ -46,16 +46,14 @@ namespace Llvm.NET
             if( module.TargetTriple != null && Triple != module.TargetTriple )
                 throw new ArgumentException( "Triple specified for the module doesn't match target machine", nameof( module ) );
 
-            IntPtr errMsg;
             var status = NativeMethods.TargetMachineEmitToFile( TargetMachineHandle
-                                                              , module.ModuleHandle
-                                                              , path
-                                                              , ( LLVMCodeGenFileType )fileType
-                                                              , out errMsg
-                                                              );
+                                                     , module.ModuleHandle
+                                                     , path
+                                                     , ( LLVMCodeGenFileType )fileType
+                                                     , out string errTxt
+                                                     );
             if( status.Failed )
             {
-                var errTxt = NativeMethods.MarshalMsg( errMsg );
                 throw new InternalCodeGeneratorException( errTxt );
             }
         }
@@ -68,18 +66,15 @@ namespace Llvm.NET
             if( module.TargetTriple != null && Triple != module.TargetTriple )
                 throw new ArgumentException( "Triple specified for the module doesn't match target machine", nameof( module ) );
 
-            IntPtr errMsg;
-            LLVMMemoryBufferRef bufferHandle;
             var status = NativeMethods.TargetMachineEmitToMemoryBuffer( TargetMachineHandle
                                                                       , module.ModuleHandle
                                                                       , ( LLVMCodeGenFileType )fileType
-                                                                      , out errMsg
-                                                                      , out bufferHandle
+                                                                      , out string errTxt
+                                                                      , out LLVMMemoryBufferRef bufferHandle
                                                                       );
 
             if( status.Failed )
             {
-                var errTxt = NativeMethods.MarshalMsg( errMsg );
                 throw new InternalCodeGeneratorException( errTxt );
             }
 
@@ -94,7 +89,7 @@ namespace Llvm.NET
             TargetMachineHandle = targetMachineHandle;
             Context = context;
         }
-       
+
         #region IDisposable Support
         private bool IsDisposed => TargetMachineHandle.Pointer == IntPtr.Zero;
 

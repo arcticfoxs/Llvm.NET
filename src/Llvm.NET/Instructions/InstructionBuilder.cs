@@ -15,10 +15,7 @@ namespace Llvm.NET.Instructions
         /// <param name="context">Context used for creating instructions</param>
         public InstructionBuilder( Context context )
         {
-            if( context == null )
-                throw new ArgumentNullException( nameof( context ) );
-
-            Context = context;
+            Context = context ?? throw new ArgumentNullException( nameof( context ) );
             BuilderHandle = NativeMethods.CreateBuilderInContext( context.ContextHandle );
         }
 
@@ -43,7 +40,7 @@ namespace Llvm.NET.Instructions
                     return null;
 
                 return BasicBlock.FromHandle( NativeMethods.GetInsertBlock( BuilderHandle ) );
-            } 
+            }
         }
 
         /// <summary>Positions the builder at the end of a given <see cref="BasicBlock"/></summary>
@@ -187,24 +184,26 @@ namespace Llvm.NET.Instructions
             }
 
             LLVMValueRef invoke = NativeMethods.BuildInvoke( BuilderHandle
-                                                           , func.ValueHandle
-                                                           , out llvmArgs[0]
-                                                           , (uint)argCount
-                                                           , then.BlockHandle
-                                                           , catchBlock.BlockHandle
-                                                           , string.Empty
-                                                           );
+                                                  , func.ValueHandle
+                                                  , out llvmArgs[0]
+                                                  , (uint)argCount
+                                                  , then.BlockHandle
+                                                  , catchBlock.BlockHandle
+                                                  , string.Empty
+                                                  );
+
             return Value.FromHandle<Invoke>( invoke );
         }
 
         public LandingPad LandingPad( ITypeRef resultType )
         {
             LLVMValueRef landingPad = NativeMethods.BuildLandingPad( BuilderHandle
-                                                                   , resultType.GetTypeRef()
-                                                                   , LLVMValueRef.Zero // personality function no longer part of instruction
-                                                                   , 0
-                                                                   , string.Empty
-                                                                   );
+                                                          , resultType.GetTypeRef()
+                                                          , new LLVMValueRef( IntPtr.Zero ) // personality function no longer part of instruction
+                                                          , 0
+                                                          , string.Empty
+                                                          );
+
             return Value.FromHandle<LandingPad>( landingPad );
         }
 
@@ -341,7 +340,7 @@ namespace Llvm.NET.Instructions
         /// <param name="args">additional indices for computing the resulting pointer</param>
         /// <returns>
         /// <para><see cref="Value"/> for the member access. This is a <see cref="Value"/>
-        /// as LLVM may optimize the expression to a <see cref="ConstantExpression"/> if it 
+        /// as LLVM may optimize the expression to a <see cref="ConstantExpression"/> if it
         /// can so the actual type of the result may be <see cref="ConstantExpression"/>
         /// or <see cref="Instructions.GetElementPtr"/>.</para>
         /// <para>Note that <paramref name="pointer"/> must be a pointer to a structure
@@ -374,7 +373,7 @@ namespace Llvm.NET.Instructions
         /// <param name="args">additional indices for computing the resulting pointer</param>
         /// <returns>
         /// <para><see cref="Value"/> for the member access. This is a <see cref="Value"/>
-        /// as LLVM may optimize the expression to a <see cref="ConstantExpression"/> if it 
+        /// as LLVM may optimize the expression to a <see cref="ConstantExpression"/> if it
         /// can so the actual type of the result may be <see cref="ConstantExpression"/>
         /// or <see cref="Instructions.GetElementPtr"/>.</para>
         /// <para>Note that <paramref name="pointer"/> must be a pointer to a structure
@@ -397,7 +396,7 @@ namespace Llvm.NET.Instructions
         /// <param name="args">additional indices for computing the resulting pointer</param>
         /// <returns>
         /// <para><see cref="Value"/> for the member access. This is a <see cref="Value"/>
-        /// as LLVM may optimize the expression to a <see cref="ConstantExpression"/> if it 
+        /// as LLVM may optimize the expression to a <see cref="ConstantExpression"/> if it
         /// can so the actual type of the result may be <see cref="ConstantExpression"/>
         /// or <see cref="Instructions.GetElementPtr"/>.</para>
         /// <para>Note that <paramref name="pointer"/> must be a pointer to a structure
@@ -429,8 +428,8 @@ namespace Llvm.NET.Instructions
         /// <param name="pointer">pointer to get an element from</param>
         /// <param name="args">additional indices for computing the resulting pointer</param>
         /// <returns>
-        /// <para><see cref="Value"/> for the member access. This is a User as LLVM may 
-        /// optimize the expression to a <see cref="ConstantExpression"/> if it 
+        /// <para><see cref="Value"/> for the member access. This is a User as LLVM may
+        /// optimize the expression to a <see cref="ConstantExpression"/> if it
         /// can so the actual type of the result may be <see cref="ConstantExpression"/>
         /// or <see cref="Instructions.GetElementPtr"/>.</para>
         /// <para>Note that <paramref name="pointer"/> must be a pointer to a structure
@@ -1084,10 +1083,10 @@ namespace Llvm.NET.Instructions
         /// <param name="isVolatile">Flag to indicate if the copy involves volatile data such as physical registers</param>
         /// <returns><see cref="Intrinsic"/> call for the memmov</returns>
         /// <remarks>
-        /// LLVM has many overloaded variants of the memmov intrinsic, this implementation currently assumes the 
+        /// LLVM has many overloaded variants of the memmov intrinsic, this implementation currently assumes the
         /// single form defined by <see cref="Intrinsic.MemMoveName"/>, which matches the classic "C" style memmov
         /// function. However future implementations should be able to deduce the types from the provided values
-        /// and generate a more specific call without changing any caller code (as is done with 
+        /// and generate a more specific call without changing any caller code (as is done with
         /// <see cref="MemCpy(NativeModule, Value, Value, Value, int, bool)"/>.)
         /// </remarks>
         public Value MemMove( Value destination, Value source, Value len, Int32 align, bool isVolatile )
@@ -1108,10 +1107,10 @@ namespace Llvm.NET.Instructions
         /// <param name="isVolatile">Flag to indicate if the copy involves volatile data such as physical registers</param>
         /// <returns><see cref="Intrinsic"/> call for the memmov</returns>
         /// <remarks>
-        /// LLVM has many overloaded variants of the memmov intrinsic, this implementation currently assumes the 
+        /// LLVM has many overloaded variants of the memmov intrinsic, this implementation currently assumes the
         /// single form defined by <see cref="Intrinsic.MemMoveName"/>, which matches the classic "C" style memmov
         /// function. However future implementations should be able to deduce the types from the provided values
-        /// and generate a more specific call without changing any caller code (as is done with 
+        /// and generate a more specific call without changing any caller code (as is done with
         /// <see cref="MemCpy(NativeModule, Value, Value, Value, int, bool)"/>.)
         /// </remarks>
         public Value MemMove( NativeModule module, Value destination, Value source, Value len, Int32 align, bool isVolatile )
@@ -1168,7 +1167,7 @@ namespace Llvm.NET.Instructions
         /// <param name="isVolatile">Flag to indicate if the fill involves volatile data such as physical registers</param>
         /// <returns><see cref="Intrinsic"/> call for the memset</returns>
         /// <remarks>
-        /// LLVM has many overloaded variants of the memset intrinsic, this implementation currently assumes the 
+        /// LLVM has many overloaded variants of the memset intrinsic, this implementation currently assumes the
         /// single form defined by <see cref="Intrinsic.MemSetName"/>, which matches the classic "C" style memset
         /// function. However future implementations should be able to deduce the types from the provided values
         /// and generate a more specific call without changing any caller code (as is done with
@@ -1192,7 +1191,7 @@ namespace Llvm.NET.Instructions
         /// <param name="isVolatile">Flag to indicate if the fill involves volatile data such as physical registers</param>
         /// <returns><see cref="Intrinsic"/> call for the memset</returns>
         /// <remarks>
-        /// LLVM has many overloaded variants of the memset intrinsic, this implementation currently assumes the 
+        /// LLVM has many overloaded variants of the memset intrinsic, this implementation currently assumes the
         /// single form defined by <see cref="Intrinsic.MemSetName"/>, which matches the classic "C" style memset
         /// function. However future implementations should be able to deduce the types from the provided values
         /// and generate a more specific call without changing any caller code (as is done with
@@ -1283,12 +1282,12 @@ namespace Llvm.NET.Instructions
             return llvmArgs;
         }
 
-        internal InstructionBuilderHandle BuilderHandle { get; }
+        internal LLVMBuilderRef BuilderHandle { get; }
 
         // LLVM will automatically perform constant folding, thus the result of applying
         // a unary operator instruction may actually be a constant value and not an instruction
         // this deals with that to produce a correct managed wrapper type
-        private Value BuildUnaryOp( Func<InstructionBuilderHandle, LLVMValueRef, string, LLVMValueRef> opFactory
+        private Value BuildUnaryOp( Func<LLVMBuilderRef, LLVMValueRef, string, LLVMValueRef> opFactory
                                   , Value operand
                                   )
         {
@@ -1299,7 +1298,7 @@ namespace Llvm.NET.Instructions
         // LLVM will automatically perform constant folding, thus the result of applying
         // a binary operator instruction may actually be a constant value and not an instruction
         // this deals with that to produce a correct managed wrapper type
-        private Value BuildBinOp( Func<InstructionBuilderHandle, LLVMValueRef, LLVMValueRef, string, LLVMValueRef> opFactory
+        private Value BuildBinOp( Func<LLVMBuilderRef, LLVMValueRef, LLVMValueRef, string, LLVMValueRef> opFactory
                                 , Value lhs
                                 , Value rhs
                                 )

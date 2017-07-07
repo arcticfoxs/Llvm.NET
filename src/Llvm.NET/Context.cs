@@ -33,7 +33,8 @@ namespace Llvm.NET
     /// LLVM objects from multiple threads may lead to race conditions corrupted
     /// state and any number of other undefined issues.</note>
     /// </remarks>
-    public sealed class Context : IDisposable
+    public sealed class Context
+        : IDisposable
     {
         /// <summary>Creates a new context</summary>
         public Context( )
@@ -432,7 +433,7 @@ namespace Llvm.NET
         /// If the elements argument list is empty then an opaque type is created (e.g. a forward reference)
         /// The <see cref="IStructType.SetBody(bool, ITypeRef[])"/> method provides a means to add a body to
         /// an opaque type at a later time if the details of the body are required. (If only pointers to
-        /// to the type are required the body isn't required) 
+        /// to the type are required the body isn't required)
         /// </remarks>
         public IStructType CreateStructType( string name, bool packed, params ITypeRef[ ] elements )
         {
@@ -461,7 +462,7 @@ namespace Llvm.NET
         /// <param name="value">string to convert into an LLVM constant value</param>
         /// <returns>new <see cref="ConstantDataArray"/></returns>
         /// <remarks>
-        /// This converts th string to ANSI form and creates an LLVM constant array of i8 
+        /// This converts th string to ANSI form and creates an LLVM constant array of i8
         /// characters for the data without any terminating null character.
         /// </remarks>
         public ConstantDataArray CreateConstantString( string value )
@@ -478,7 +479,7 @@ namespace Llvm.NET
         /// <param name="nullTerminate">flag to indicate if the string should include a null terminator</param>
         /// <returns>new <see cref="ConstantDataArray"/></returns>
         /// <remarks>
-        /// This converts the string to ANSI form and creates an LLVM constant array of i8 
+        /// This converts the string to ANSI form and creates an LLVM constant array of i8
         /// characters for the data without any terminating null character.
         /// </remarks>
         public ConstantDataArray CreateConstantString( string value, bool nullTerminate )
@@ -622,11 +623,94 @@ namespace Llvm.NET
             return Value.FromHandle<ConstantFP>( NativeMethods.ConstReal( DoubleType.GetTypeRef( ), constValue ) );
         }
 
-        // These methods provide unique mapping between the .NET wrappers and the underlying LLVM instances
+        /// <summary>Creates a simple boolean attribute</summary>
+        /// <param name="kind">Kind of attribute</param>
+        public AttributeValue CreateAttribute( AttributeKind kind )
+        {
+            if( kind.RequiresIntValue( ) )
+                throw new ArgumentException( $"Attribute {kind} requires a value", nameof( kind ) );
+
+            return CreateAttribute( kind, 0ul );
+        }
+
+        /// <summary>Creates an attribute with an integer value parameter</summary>
+        /// <param name="kind">The kind of attribute</param>
+        /// <param name="value">Value for the attribute</param>
+        /// <remarks>
+        /// <para>Not all attributes support a value and those that do don't all support
+        /// a full 64bit value. The following table provides the kinds of attributes
+        /// accepting a value and the allowed size of the values.</para>
+        /// <list type="table">
+        /// <listheader><term><see cref="AttributeKind"/></term><term>Bit Length</term></listheader>
+        /// <item><term><see cref="AttributeKind.Alignment"/></term><term>32</term></item>
+        /// <item><term><see cref="AttributeKind.StackAlignment"/></term><term>32</term></item>
+        /// <item><term><see cref="AttributeKind.Dereferenceable"/></term><term>64</term></item>
+        /// <item><term><see cref="AttributeKind.DereferenceableOrNull"/></term><term>64</term></item>
+        /// </list>
+        /// </remarks>
+        public AttributeValue CreateAttribute( AttributeKind kind, UInt64 value )
+        {
+            var handle = NativeMethods.CreateEnumAttribute( ContextHandle
+                                                          , kind.GetEnumAttributeId( )
+                                                          , value
+                                                          );
+            return AttributeValue.FromHandle( this, handle );
+        }
+
+        /// <summary>Adds a valueless named attribute</summary>
+        /// <param name="name">Attribute name</param>
+        public AttributeValue CreateAttribute( string name ) => CreateAttribute( name, string.Empty);
+
+        /// <summary>Adds a Target specific named attribute with value</summary>
+        /// <param name="name">Name of the attribute</param>
+        /// <param name="value">Value of the attribute</param>
+        public AttributeValue CreateAttribute( string name, string value )
+        {
+            if(string.IsNullOrEmpty(name))
+            {
+                throw new ArgumentException( "Cannot be null or empty", nameof( name ) );
+            }
+            var handle = NativeMethods.CreateStringAttribute( ContextHandle, name, ( uint )name.Length, value, ( uint )( value?.Length ?? 0 ) );
+            return AttributeValue.FromHandle(this, handle );
+        }
+
+        // looks up an attribute by it's handle, if none is found a new manaeged wrapper is created
+        // The factory as a Func<> allows for the constructor to remain private so that the only
+        // way to create an AttributeValue is via the containing context, so that the proper ownership
+        // is maintained. (LLVM has no method of retrieving the context that owns an attribute)
+        internal AttributeValue GetAttributeFor( LLVMAttributeRef handle, Func<Context, LLVMAttributeRef, AttributeValue> factory )
+        {
+            if( handle.Pointer.IsNull( ) )
+                return null;
+
+            if( AttributeValueCache.TryGetValue( handle.Pointer, out AttributeValue retVal ) )
+                return retVal;
+
+            retVal = factory( this, handle );
+            AttributeValueCache.Add( handle.Pointer, retVal );
+            return retVal;
+        }
+
+        // These interning methods provide unique mapping between the .NET wrappers and the underlying LLVM instances
         // The mapping ensures that any LibLLVM handle is always re-mappable to a exactly one wrapper instance.
         // This helps reduce the number of wrapper instances created and also allows reference equality to work
         // as expected for managed types.
-        #region Interning Factories
+
+        internal static Context GetContextFor( LLVMContextRef contextRef )
+        {
+            if( contextRef.Pointer == IntPtr.Zero )
+                return null;
+
+            lock( ContextCache )
+            {
+                if( ContextCache.TryGetValue( contextRef, out Context retVal ) )
+                    return retVal;
+
+                return new Context( contextRef );
+            }
+        }
+
+        #region Module Interning
         internal void AddModule( NativeModule module )
         {
             ModuleCache.Add( module.ModuleHandle.Pointer, module );
@@ -646,8 +730,7 @@ namespace Llvm.NET
             if( hModuleContext.Pointer != ContextHandle.Pointer )
                 throw new ArgumentException( "Incorrect context for module" );
 
-            NativeModule retVal;
-            if( !ModuleCache.TryGetValue( moduleRef.Pointer, out retVal ) )
+            if( !ModuleCache.TryGetValue( moduleRef.Pointer, out NativeModule retVal ) )
                 retVal = new NativeModule( moduleRef );
 
             return retVal;
@@ -662,7 +745,9 @@ namespace Llvm.NET
             Debug.Assert( hContext.Pointer != IntPtr.Zero );
             return GetContextFor( hContext );
         }
+        #endregion
 
+        #region Value interning
         internal static Context GetContextFor( LLVMValueRef valueRef )
         {
             if( valueRef.Pointer == IntPtr.Zero )
@@ -683,20 +768,6 @@ namespace Llvm.NET
             return GetContextFor( hContext );
         }
 
-        internal static Context GetContextFor( LLVMContextRef contextRef )
-        {
-            if( contextRef.Pointer == IntPtr.Zero )
-                return null;
-
-            lock ( ContextCache )
-            {
-                Context retVal;
-                if( ContextCache.TryGetValue( contextRef, out retVal ) )
-                    return retVal;
-
-                return new Context( contextRef );
-            }
-        }
 
         internal static Context GetContextFor( LLVMMetadataRef handle )
         {
@@ -713,8 +784,6 @@ namespace Llvm.NET
             MetadataCache.Remove( node.MetadataHandle );
         }
 
-        internal LLVMContextRef ContextHandle { get; private set; }
-
         [System.Diagnostics.CodeAnalysis.SuppressMessage( "Microsoft.Performance", "CA1822:MarkMembersAsStatic", Justification = "Conditional attribute makes this an empty method in release builds" )]
         [Conditional( "DEBUG" )]
         internal void AssertValueNotInterned( LLVMValueRef valueRef )
@@ -727,8 +796,7 @@ namespace Llvm.NET
             if( valueRef.Pointer == IntPtr.Zero )
                 throw new ArgumentNullException( nameof( valueRef ) );
 
-            Value retVal = null;
-            if( ValueCache.TryGetValue( valueRef.Pointer, out retVal ) )
+            if( ValueCache.TryGetValue( valueRef.Pointer, out Value retVal ) )
                 return retVal;
 
             retVal = constructor( valueRef );
@@ -741,8 +809,7 @@ namespace Llvm.NET
             if( handle == LLVMMetadataRef.Zero )
                 throw new ArgumentNullException( nameof( handle ) );
 
-            LlvmMetadata retVal = null;
-            if( MetadataCache.TryGetValue( handle, out retVal ) )
+            if( MetadataCache.TryGetValue( handle, out LlvmMetadata retVal ) )
                 return retVal;
 
             retVal = staticFactory( handle );
@@ -758,8 +825,7 @@ namespace Llvm.NET
             if( handle.Pointer == IntPtr.Zero )
                 throw new ArgumentNullException( nameof( handle ) );
 
-            MDOperand retVal = null;
-            if( MDOperandCache.TryGetValue( handle, out retVal ) )
+            if( MDOperandCache.TryGetValue( handle, out MDOperand retVal ) )
                 return retVal;
 
             retVal = new MDOperand( owningNode, handle );
@@ -779,8 +845,7 @@ namespace Llvm.NET
             if( valueRef.Pointer == IntPtr.Zero )
                 throw new ArgumentNullException( nameof( valueRef ) );
 
-            ITypeRef retVal;
-            if( TypeCache.TryGetValue( valueRef.Pointer, out retVal ) )
+            if( TypeCache.TryGetValue( valueRef.Pointer, out ITypeRef retVal ) )
                 return retVal;
 
             retVal = constructor( valueRef );
@@ -832,20 +897,21 @@ namespace Llvm.NET
             NativeMethods.ContextSetDiagnosticHandler( ContextHandle, ActiveHandler.GetFuncPointer( ), IntPtr.Zero );
         }
 
-        WrappedNativeCallback ActiveHandler;
-
-
         private void DiagnosticHandler( LLVMDiagnosticInfoRef param0, IntPtr param1 )
         {
-            var msg = NativeMethods.MarshalMsg( NativeMethods.GetDiagInfoDescription( param0 ) );
+            var msg = NativeMethods.GetDiagInfoDescription( param0 );
             var level = NativeMethods.GetDiagInfoSeverity( param0 );
             Debug.WriteLine( "{0}: {1}", level, msg );
             Debug.Assert( level != LLVMDiagnosticSeverity.LLVMDSError );
         }
 
+        internal LLVMContextRef ContextHandle { get; private set; }
+        WrappedNativeCallback ActiveHandler;
+
         private readonly Dictionary< IntPtr, Value > ValueCache = new Dictionary< IntPtr, Value >( );
         private readonly Dictionary< IntPtr, ITypeRef > TypeCache = new Dictionary< IntPtr, ITypeRef >( );
         private readonly Dictionary< IntPtr, NativeModule > ModuleCache = new Dictionary< IntPtr, NativeModule >( );
+        private readonly Dictionary<IntPtr, AttributeValue> AttributeValueCache = new Dictionary<IntPtr, AttributeValue>( );
         private readonly Dictionary< LLVMMetadataRef, LlvmMetadata > MetadataCache = new Dictionary< LLVMMetadataRef, LlvmMetadata >( );
         private readonly Dictionary< LLVMMDOperandRef, MDOperand > MDOperandCache = new Dictionary< LLVMMDOperandRef, MDOperand >( );
 

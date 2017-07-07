@@ -18,7 +18,7 @@ namespace Llvm.NET
             Module = module;
             ComdatHandle = comdatRef;
         }
-        
+
         public string Name
         {
             get
@@ -26,7 +26,7 @@ namespace Llvm.NET
                 if( Module.IsDisposed )
                     return string.Empty;
                 else
-                    return NativeMethods.MarshalMsg( NativeMethods.ComdatGetName( ComdatHandle ) );
+                    return NativeMethods.ComdatGetName( ComdatHandle );
             }
         }
 
@@ -37,7 +37,7 @@ namespace Llvm.NET
                 if( Module.IsDisposed )
                     return default( ComdatKind );
                 else
-                    return (ComdatKind)NativeMethods.ComdatGetKind( ComdatHandle );
+                    return ( ComdatKind )NativeMethods.ComdatGetKind( ComdatHandle );
             }
 
             set

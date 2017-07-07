@@ -4,7 +4,7 @@ using System;
 
 namespace Llvm.NET.Values
 {
-    public class GlobalObject 
+    public class GlobalObject
         : GlobalValue
     {
         internal GlobalObject( LLVMValueRef valueRef )
@@ -30,8 +30,7 @@ namespace Llvm.NET.Values
         {
             get
             {
-                var ptr = NativeMethods.GetSection( ValueHandle );
-                return Marshal.PtrToStringAnsi( ptr );
+                return Marshal.PtrToStringAnsi( NativeMethods.GetSection( ValueHandle ) );
             }
             set
             {

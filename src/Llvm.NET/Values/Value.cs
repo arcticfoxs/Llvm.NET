@@ -35,8 +35,7 @@ namespace Llvm.NET.Values
                 if( Context.IsDisposed )
                     return string.Empty;
 
-                var ptr = NativeMethods.GetValueName( ValueHandle );
-                return Marshal.PtrToStringAnsi( ptr );
+                return Marshal.PtrToStringAnsi( NativeMethods.GetValueName( ValueHandle ) );
             }
 
             set
@@ -58,13 +57,22 @@ namespace Llvm.NET.Values
 
         public Context Context => NativeType.Context;
 
+        public bool IsInstruction => NativeMethods.GetValueKind( ValueHandle ) > ValueKind.Instruction;
+
+        public bool IsFunction => NativeMethods.GetValueKind( ValueHandle ) == ValueKind.Function;
+
+        public bool IsCallSite
+        {
+            get
+            {
+                var kind = NativeMethods.GetValueKind( ValueHandle );
+                return (kind == ValueKind.Call) || (kind == ValueKind.Invoke);
+            }
+        }
+
         /// <summary>Generates a string representing the LLVM syntax of the value</summary>
         /// <returns>string version of the value formatted by LLVM</returns>
-        public override string ToString( )
-        {
-            var ptr = NativeMethods.PrintValueToString( ValueHandle );
-            return NativeMethods.MarshalMsg( ptr );
-        }
+        public override string ToString( ) => NativeMethods.PrintValueToString( ValueHandle );
 
         /// <summary>Replace all uses of a <see cref="Value"/> with another one</summary>
         /// <param name="other">New value</param>

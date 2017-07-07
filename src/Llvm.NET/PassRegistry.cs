@@ -13,7 +13,7 @@ namespace Llvm.NET
             PassRegistryHandle = NativeMethods.CreatePassRegistry( );
         }
 
-        private PassRegistry( PassRegistryHandle hRegistry )
+        private PassRegistry( LLVMPassRegistryRef hRegistry )
         {
             PassRegistryHandle = hRegistry;
         }
@@ -129,7 +129,7 @@ namespace Llvm.NET
         }
         #endregion
 
-        PassRegistryHandle PassRegistryHandle;
+        LLVMPassRegistryRef PassRegistryHandle;
 
         public static PassRegistry GlobalRegistry => LazyGlobalPassRegistry.Value;
 

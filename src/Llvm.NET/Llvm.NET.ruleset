@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<RuleSet Name="Rules for Llvm.NET" Description="Code analysis rules for Llvm.NET.csproj." ToolsVersion="14.0">
+<RuleSet Name="Rules for Llvm.NET" Description="Code analysis rules for Llvm.NET.csproj." ToolsVersion="15.0">
   <Rules AnalyzerId="CSharpEssentials" RuleNamespace="CSharpEssentials">
     <Rule Id="FadedToken" Action="None" />
   </Rules>
@@ -58,7 +58,7 @@
     <Rule Id="CA1059" Action="Warning" />
     <Rule Id="CA1060" Action="Warning" />
     <Rule Id="CA1061" Action="Warning" />
-    <Rule Id="CA1062" Action="Error" />
+    <Rule Id="CA1062" Action="Warning" />
     <Rule Id="CA1063" Action="Warning" />
     <Rule Id="CA1064" Action="Warning" />
     <Rule Id="CA1065" Action="Warning" />

@@ -17,7 +17,7 @@ namespace Llvm.NET.Instructions
             if( clause == null )
                 throw new ArgumentNullException( nameof( clause ) );
 
-            NativeMethods.AddClause(ValueHandle, clause.ValueHandle);
+            NativeMethods.AddClause( ValueHandle, clause.ValueHandle);
         }
 
         public void SetCleanup( bool value ) => NativeMethods.SetCleanup( ValueHandle, value );

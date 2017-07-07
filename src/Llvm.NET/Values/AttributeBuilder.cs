@@ -1,5 +1,6 @@
-﻿using System;
-using Llvm.NET.Native;
+﻿#if NO_LONGER_NECESSARY
+using System;
+using System.Collections.Generic;
 
 namespace Llvm.NET.Values
 {
@@ -12,25 +13,20 @@ namespace Llvm.NET.Values
     /// </para>
     /// <note type="note">
     /// It is important to keep in mind that an AttributeBuilder is dimensionless, that is,
-    /// AttributeSet does not contain or store a <see cref="FunctionAttributeIndex"/> value.
+    /// AttributeBuilder does not contain or store a <see cref="FunctionAttributeIndex"/> value.
     /// The index is applied only when creating the <see cref="AttributeSet"/> in
     /// <see cref="ToAttributeSet(FunctionAttributeIndex,Context)"/>
     /// </note>
     /// </remarks>
     public sealed class AttributeBuilder
-        : IDisposable
     {
-        /// <summary>Creates a new empty <see cref="AttributeBuilder"/> instance</summary>
-        public AttributeBuilder( )
-        {
-            BuilderHandle = NativeMethods.CreateAttributeBuilder( );
-        }
-
         /// <summary>Creates a new <see cref="AttributeBuilder"/> with a given <see cref="AttributeValue"/></summary>
+        /// <param name="context">Context that will own he attributes created by this builder</param>
         /// <param name="value"><see cref="AttributeValue"/> to add to the builder after creating it</param>
-        public AttributeBuilder( AttributeValue value )
+        public AttributeBuilder( Context context, AttributeValue value )
         {
-            BuilderHandle = NativeMethods.CreateAttributeBuilder2( value.NativeAttribute );
+            Context = context;
+            Attributes.Add( value );
         }
 
         /// <summary>Creates a new <see cref="AttributeBuilder"/> from a single index of an existing <see cref="AttributeSet"/></summary>
@@ -41,41 +37,29 @@ namespace Llvm.NET.Values
             if( attributes == null )
                 throw new ArgumentNullException( nameof( attributes ) );
 
-            BuilderHandle = NativeMethods.CreateAttributeBuilder3( attributes.NativeAttributeSet, ( uint )index );
-        }
-
-        /// <summary>Destroys the underlying native builder</summary>
-        public void Dispose( )
-        {
-            BuilderHandle.Dispose( );
-        }
-
-        /// <summary>Indicates if this Builder contains no attributes</summary>
-        public bool IsEmpty
-        {
-            get
+            Context = attributes.Context;
+            foreach( var attrib in attributes.AllAttributes )
             {
-                if( BuilderHandle.IsClosed )
-                    return true; // don't throw an exception in a property getter method
-
-                return !NativeMethods.AttributeBuilderHasTargetDependentAttrs( BuilderHandle )
-                    && !NativeMethods.AttributeBuilderHasTargetIndependentAttrs( BuilderHandle );
+                Attributes.Add( attrib.Value );
             }
         }
+
+        public Context Context { get; }
+
+        /// <summary>Indicates if this Builder contains no attributes</summary>
+        public bool IsEmpty => Attributes.Count == 0;
 
         /// <summary>Adds a new boolean attribute to this builder</summary>
         /// <param name="kind">Kind of attribute to add</param>
         /// <returns>This builder for fluent style programming</returns>
         public AttributeBuilder Add( AttributeKind kind )
         {
-            if( BuilderHandle.IsClosed )
-                throw new ObjectDisposedException( nameof( AttributeBuilder ) );
-
             if( kind.RequiresIntValue( ) )
                 throw new ArgumentException( "Attribute requires a value" );
 
-            NativeMethods.AttributeBuilderAddEnum( BuilderHandle, ( LLVMAttrKind )kind );
-            return this;
+            throw new NotImplementedException( );
+            //NativeMethods.AttributeBuilderAddEnum( BuilderHandle, ( LLVMAttrKind )kind );
+            //return this;
         }
 
         /// <summary>Adds an <see cref="AttributeValue"/> to a builder</summary>
@@ -83,11 +67,12 @@ namespace Llvm.NET.Values
         /// <returns>This builder for fluent style programming</returns>
         public AttributeBuilder Add( AttributeValue value )
         {
-            if( BuilderHandle.IsClosed )
-                throw new ObjectDisposedException( nameof( AttributeBuilder ) );
+            //if( BuilderHandle.IsClosed )
+            //    throw new ObjectDisposedException( nameof( AttributeBuilder ) );
 
-            NativeMethods.AttributeBuilderAddAttribute( BuilderHandle, value.NativeAttribute );
-            return this;
+            //NativeMethods.AttributeBuilderAddAttribute( BuilderHandle, value.NativeAttribute );
+            //return this;
+            throw new NotImplementedException( );
         }
 
         /// <summary>Adds a target dependent string attribute to a builder</summary>
@@ -95,8 +80,8 @@ namespace Llvm.NET.Values
         /// <returns>This builder for fluent style programming</returns>
         public AttributeBuilder Add( string name )
         {
-            if( BuilderHandle.IsClosed )
-                throw new ObjectDisposedException( nameof( AttributeBuilder ) );
+            //if( BuilderHandle.IsClosed )
+            //    throw new ObjectDisposedException( nameof( AttributeBuilder ) );
 
             return Add( name, string.Empty );
         }
@@ -107,24 +92,26 @@ namespace Llvm.NET.Values
         /// <returns>This builder for fluent style programming</returns>
         public AttributeBuilder Add( string name, string value )
         {
-            if( BuilderHandle.IsClosed )
-                throw new ObjectDisposedException( nameof( AttributeBuilder ) );
+            //if( BuilderHandle.IsClosed )
+            //    throw new ObjectDisposedException( nameof( AttributeBuilder ) );
 
-            NativeMethods.AttributeBuilderAddStringAttribute( BuilderHandle, name, value );
-            return this;
+            //NativeMethods.AttributeBuilderAddStringAttribute( BuilderHandle, name, value );
+            //return this;
+            throw new NotImplementedException( );
         }
 
-        /// <summary>Removes a boolean attribute from the builder</summary>
-        /// <param name="kind">Kind of attribute to remove</param>
-        /// <returns>This builder for fluent style programming</returns>
-        public AttributeBuilder Remove( AttributeKind kind )
-        {
-            if( BuilderHandle.IsClosed )
-                throw new ObjectDisposedException( nameof( AttributeBuilder ) );
+        ///// <summary>Removes a boolean attribute from the builder</summary>
+        ///// <param name="kind">Kind of attribute to remove</param>
+        ///// <returns>This builder for fluent style programming</returns>
+        //public AttributeBuilder Remove( AttributeKind kind )
+        //{
+        //    if( BuilderHandle.IsClosed )
+        //        throw new ObjectDisposedException( nameof( AttributeBuilder ) );
 
-            NativeMethods.AttributeBuilderRemoveEnum( BuilderHandle, ( LLVMAttrKind )kind );
-            return this;
-        }
+        //    //NativeMethods.AttributeBuilderRemoveEnum( BuilderHandle, ( LLVMAttrKind )kind );
+        //    //return this;
+        //    throw new NotImplementedException( );
+        //}
 
         /// <summary>Removes attributes specified in an <see cref="AttributeSet"/></summary>
         /// <param name="attributes">Attributes to remove</param>
@@ -135,11 +122,12 @@ namespace Llvm.NET.Values
             if( attributes == null )
                 throw new ArgumentNullException( nameof( attributes ) );
 
-            if( BuilderHandle.IsClosed )
-                throw new ObjectDisposedException( nameof( AttributeBuilder ) );
+            //if( BuilderHandle.IsClosed )
+            //    throw new ObjectDisposedException( nameof( AttributeBuilder ) );
 
-            NativeMethods.AttributeBuilderRemoveAttributes( BuilderHandle, attributes.NativeAttributeSet, ( uint )index );
-            return this;
+            //NativeMethods.AttributeBuilderRemoveAttributes( BuilderHandle, attributes.NativeAttributeSet, ( uint )index );
+            //return this;
+            throw new NotImplementedException( );
         }
 
         /// <summary>Removes a target dependent attribute from this builder</summary>
@@ -147,11 +135,12 @@ namespace Llvm.NET.Values
         /// <returns>This builder for fluent style programming</returns>
         public AttributeBuilder Remove( string name )
         {
-            if( BuilderHandle.IsClosed )
-                throw new ObjectDisposedException( nameof( AttributeBuilder ) );
+            //if( BuilderHandle.IsClosed )
+            //    throw new ObjectDisposedException( nameof( AttributeBuilder ) );
 
-            NativeMethods.AttributeBuilderRemoveAttribute( BuilderHandle, name );
-            return this;
+            //NativeMethods.AttributeBuilderRemoveAttribute( BuilderHandle, name );
+            //return this;
+            throw new NotImplementedException( );
         }
 
         /// <summary>Merges the contents of another <see cref="AttributeBuilder"/> into this one</summary>
@@ -162,11 +151,12 @@ namespace Llvm.NET.Values
             if( other == null )
                 throw new ArgumentNullException( nameof( other ) );
 
-            if( BuilderHandle.IsClosed )
-                throw new ObjectDisposedException( nameof( AttributeBuilder ) );
+            //if( BuilderHandle.IsClosed )
+            //    throw new ObjectDisposedException( nameof( AttributeBuilder ) );
 
-            NativeMethods.AttributeBuilderMerge( BuilderHandle, other.BuilderHandle );
-            return this;
+            //NativeMethods.AttributeBuilderMerge( BuilderHandle, other.BuilderHandle );
+            //return this;
+            throw new NotImplementedException( );
         }
 
         /// <summary>Removes the attributes of another builder from this one</summary>
@@ -177,11 +167,12 @@ namespace Llvm.NET.Values
             if( other == null )
                 throw new ArgumentNullException( nameof( other ) );
 
-            if( BuilderHandle.IsClosed )
-                throw new ObjectDisposedException( nameof( AttributeBuilder ) );
+            //if( BuilderHandle.IsClosed )
+            //    throw new ObjectDisposedException( nameof( AttributeBuilder ) );
 
-            NativeMethods.AttributeBuilderRemoveBldr( BuilderHandle, other.BuilderHandle );
-            return this;
+            //NativeMethods.AttributeBuilderRemoveBldr( BuilderHandle, other.BuilderHandle );
+            //return this;
+            throw new NotImplementedException( );
         }
 
         /// <summary>Checks if this builder overlaps the attributes in another builder</summary>
@@ -192,32 +183,35 @@ namespace Llvm.NET.Values
             if( other == null )
                 throw new ArgumentNullException( nameof( other ) );
 
-            if( BuilderHandle.IsClosed )
-                throw new ObjectDisposedException( nameof( AttributeBuilder ) );
+            //if( BuilderHandle.IsClosed )
+            //    throw new ObjectDisposedException( nameof( AttributeBuilder ) );
 
-            return NativeMethods.AttributeBuilderOverlaps( BuilderHandle, other.BuilderHandle );
+            //return NativeMethods.AttributeBuilderOverlaps( BuilderHandle, other.BuilderHandle );
+            throw new NotImplementedException( );
         }
 
-        /// <summary>Checks if this builder contains a given boolean attribute</summary>
-        /// <param name="kind">Kind of attribute to test for</param>
-        /// <returns><see langword="true"/> if this builder contains <paramref name="kind"/></returns>
-        public bool Contains( AttributeKind kind )
-        {
-            if( BuilderHandle.IsClosed )
-                throw new ObjectDisposedException( nameof( AttributeBuilder ) );
+        ///// <summary>Checks if this builder contains a given boolean attribute</summary>
+        ///// <param name="kind">Kind of attribute to test for</param>
+        ///// <returns><see langword="true"/> if this builder contains <paramref name="kind"/></returns>
+        //public bool Contains( AttributeKind kind )
+        //{
+        //    if( BuilderHandle.IsClosed )
+        //        throw new ObjectDisposedException( nameof( AttributeBuilder ) );
 
-            return NativeMethods.AttributeBuilderContainsEnum( BuilderHandle, ( LLVMAttrKind )kind );
-        }
+        //    //return NativeMethods.AttributeBuilderContainsEnum( BuilderHandle, ( LLVMAttrKind )kind );
+        //    throw new NotImplementedException( );
+        //}
 
         /// <summary>Checks if this builder contains a given target dependent attribute</summary>
         /// <param name="name">Kind of attribute to test for</param>
         /// <returns><see langword="true"/> if this builder contains <paramref name="name"/></returns>
         public bool Contains( string name )
         {
-            if( BuilderHandle.IsClosed )
-                throw new ObjectDisposedException( nameof( AttributeBuilder ) );
+            //if( BuilderHandle.IsClosed )
+            //    throw new ObjectDisposedException( nameof( AttributeBuilder ) );
 
-            return NativeMethods.AttributeBuilderContainsName( BuilderHandle, name );
+            //return NativeMethods.AttributeBuilderContainsName( BuilderHandle, name );
+            throw new NotImplementedException( );
         }
 
         /// <summary>Checks if the builder contains any of the attributes in a given <see cref="AttributeSet"/></summary>
@@ -229,10 +223,11 @@ namespace Llvm.NET.Values
             if( attributes == null )
                 throw new ArgumentNullException( nameof( attributes ) );
 
-            if( BuilderHandle.IsClosed )
-                throw new ObjectDisposedException( nameof( AttributeBuilder ) );
+            //if( BuilderHandle.IsClosed )
+            //    throw new ObjectDisposedException( nameof( AttributeBuilder ) );
 
-            return NativeMethods.AttributeBuilderHasAttributes( BuilderHandle, attributes.NativeAttributeSet, ( uint )index );
+            //return NativeMethods.AttributeBuilderHasAttributes( BuilderHandle, attributes.NativeAttributeSet, ( uint )index );
+            throw new NotImplementedException( );
         }
 
         /// <summary>Converts the contents of this builder to an immutable <see cref="AttributeSet"/></summary>
@@ -241,12 +236,13 @@ namespace Llvm.NET.Values
         /// <returns>New <see cref="AttributeSet"/> containing the attributes from this builder in the specified index</returns>
         public AttributeSet ToAttributeSet( FunctionAttributeIndex index, Context context )
         {
-            if( BuilderHandle.IsClosed )
-                throw new ObjectDisposedException( nameof( AttributeBuilder ) );
+            //if( BuilderHandle.IsClosed )
+            //    throw new ObjectDisposedException( nameof( AttributeBuilder ) );
 
             return new AttributeSet( context, index, this );
         }
 
-        internal AttributeBuilderHandle BuilderHandle;
+        List<AttributeValue> Attributes = new List<AttributeValue>();
     }
 }
+#endif

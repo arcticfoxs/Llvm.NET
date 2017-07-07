@@ -15,13 +15,13 @@ namespace Llvm.NET.DebugInfo
                                             , line
                                             , column
                                             , scope.VerifyArgNotNull(nameof(scope)).MetadataHandle
-                                            , inlinedAt?.MetadataHandle ?? LLVMMetadataRef.Zero 
+                                            , inlinedAt?.MetadataHandle ?? LLVMMetadataRef.Zero
                                             )
                   )
         {
         }
 
-        public DILocalScope Scope => FromHandle< DILocalScope >( NativeMethods.GetDILocationScope( MetadataHandle ) );
+        public DILocalScope Scope => FromHandle<DILocalScope>( NativeMethods.GetDILocationScope( MetadataHandle ) );
 
         public uint Line => NativeMethods.GetDILocationLine( MetadataHandle );
 

@@ -25,22 +25,22 @@ namespace TestDebugInfo
             module.AddModuleFlag( ModuleFlagBehavior.Error, "PIC Level", 2 );
         }
 
-        public AttributeSet BuildTargetDependentFunctionAttributes( Context ctx )
+        public IAttributeSet BuildTargetDependentFunctionAttributes( Context ctx )
         {
-            var bldr = new AttributeBuilder( );
+            var bldr = new AttributeSet( ctx );
 
-            bldr.Add( "disable-tail-calls", "false" );
-            bldr.Add( "less-precise-fpmad", "false" );
-            bldr.Add( "no-frame-pointer-elim", "false" );
-            bldr.Add( "no-infs-fp-math", "false" );
-            bldr.Add( "no-nans-fp-math", "false" );
-            bldr.Add( "stack-protector-buffer-size", "8" );
-            bldr.Add( "target-cpu", Cpu );
-            bldr.Add( "target-features", Features );
-            bldr.Add( "unsafe-fp-math", "false" );
-            bldr.Add( "use-soft-float", "false" );
-            bldr.Add( AttributeKind.UWTable );
-            return bldr.ToAttributeSet( FunctionAttributeIndex.Function, ctx );
+            bldr[ FunctionAttributeIndex.Function ].Add("disable-tail-calls", "false" );
+            bldr[ FunctionAttributeIndex.Function ].Add( "less-precise-fpmad", "false" );
+            bldr[ FunctionAttributeIndex.Function ].Add( "no-frame-pointer-elim", "false" );
+            bldr[ FunctionAttributeIndex.Function ].Add( "no-infs-fp-math", "false" );
+            bldr[ FunctionAttributeIndex.Function ].Add( "no-nans-fp-math", "false" );
+            bldr[ FunctionAttributeIndex.Function ].Add( "stack-protector-buffer-size", "8" );
+            bldr[ FunctionAttributeIndex.Function ].Add( "target-cpu", Cpu );
+            bldr[ FunctionAttributeIndex.Function ].Add( "target-features", Features );
+            bldr[ FunctionAttributeIndex.Function ].Add( "unsafe-fp-math", "false" );
+            bldr[ FunctionAttributeIndex.Function ].Add( "use-soft-float", "false" );
+            bldr[ FunctionAttributeIndex.Function ].Add( AttributeKind.UWTable );
+            return bldr;
         }
     }
 }

@@ -87,11 +87,10 @@ namespace Llvm.NET.DebugInfo
         /// <summary>Creates a <see cref="DINamespace"/></summary>
         /// <param name="scope">Containing scope for the namespace or null if the namespace is a global one</param>
         /// <param name="name">Name of the namespace</param>
-        /// <param name="file">Source file containing the declaration (may be null if more than one or not known)</param>
-        /// <param name="line">Line number of the namespace declaration</param>
+        /// <param name="exportSymbols">export symbols</param>
         /// <returns></returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage( "Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Justification = "Specific type required by interop call" )]
-        public DINamespace CreateNamespace( DIScope scope, string name, DIFile file, uint line )
+        public DINamespace CreateNamespace( DIScope scope, string name, bool exportSymbols )
         {
             if( string.IsNullOrWhiteSpace( name ) )
                 throw new ArgumentException( "name cannot be null or empty", nameof( name ) );
@@ -99,8 +98,7 @@ namespace Llvm.NET.DebugInfo
             var handle = NativeMethods.DIBuilderCreateNamespace( BuilderHandle
                                                                , scope?.MetadataHandle ?? LLVMMetadataRef.Zero
                                                                , name
-                                                               , file?.MetadataHandle ?? LLVMMetadataRef.Zero
-                                                               , line
+                                                               , exportSymbols
                                                                );
             return MDNode.FromHandle<DINamespace>( handle );
         }
@@ -371,17 +369,16 @@ namespace Llvm.NET.DebugInfo
         /// <summary>Construct debug information for a basic type (a.k.a. primitive type)</summary>
         /// <param name="name">Name of the type</param>
         /// <param name="bitSize">Bit size for the type</param>
-        /// <param name="bitAlign">Bit alignment for the type</param>
         /// <param name="encoding"><see cref="DiTypeKind"/> encoding for the type</param>
         /// <returns></returns>
-        public DIBasicType CreateBasicType( string name, ulong bitSize, ulong bitAlign, DiTypeKind encoding )
+        public DIBasicType CreateBasicType( string name, UInt64 bitSize, DiTypeKind encoding )
         {
-            var handle = NativeMethods.DIBuilderCreateBasicType( BuilderHandle, name, bitSize, bitAlign, ( uint )encoding );
+            var handle = NativeMethods.DIBuilderCreateBasicType( BuilderHandle, name, bitSize, ( uint )encoding );
             return MDNode.FromHandle<DIBasicType>( handle );
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage( "Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Justification = "Specific type required by interop call" )]
-        public DIDerivedType CreatePointerType( DIType pointeeType, string name, ulong bitSize, ulong bitAlign )
+        public DIDerivedType CreatePointerType( DIType pointeeType, string name, UInt64 bitSize, UInt32 bitAlign )
         {
             var handle = NativeMethods.DIBuilderCreatePointerType( BuilderHandle
                                                                  , pointeeType?.MetadataHandle ?? LLVMMetadataRef.Zero // null == void
@@ -411,7 +408,7 @@ namespace Llvm.NET.DebugInfo
             if( count == 0 )
                 handles = new[ ] { default( LLVMMetadataRef ) };
 
-            var handle = NativeMethods.DIBuilderGetOrCreateTypeArray( BuilderHandle, out handles[ 0 ], ( ulong )count );
+            var handle = NativeMethods.DIBuilderGetOrCreateTypeArray( BuilderHandle, out handles[ 0 ], ( UInt64 )count );
             return new DITypeArray( handle );
         }
 
@@ -445,8 +442,8 @@ namespace Llvm.NET.DebugInfo
                                                , string name
                                                , DIFile file
                                                , uint line
-                                               , ulong bitSize
-                                               , ulong bitAlign
+                                               , UInt64 bitSize
+                                               , UInt32 bitAlign
                                                , uint flags
                                                , DIType derivedFrom
                                                , DINodeArray elements
@@ -476,8 +473,8 @@ namespace Llvm.NET.DebugInfo
                                                , string name
                                                , DIFile file
                                                , uint line
-                                               , ulong bitSize
-                                               , ulong bitAlign
+                                               , UInt64 bitSize
+                                               , UInt32 bitAlign
                                                , DebugInfoFlags debugFlags
                                                , DIType derivedFrom
                                                , params DINode[ ] elements
@@ -490,8 +487,8 @@ namespace Llvm.NET.DebugInfo
                                                , string name
                                                , DIFile file
                                                , uint line
-                                               , ulong bitSize
-                                               , ulong bitAlign
+                                               , UInt64 bitSize
+                                               , UInt32 bitAlign
                                                , DebugInfoFlags debugFlags
                                                , DIType derivedFrom
                                                , IEnumerable<DINode> elements
@@ -505,8 +502,8 @@ namespace Llvm.NET.DebugInfo
                                               , string name
                                               , DIFile file
                                               , uint line
-                                              , ulong bitSize
-                                              , ulong bitAlign
+                                              , UInt64 bitSize
+                                              , UInt32 bitAlign
                                               , uint flags
                                               , DINodeArray elements
                                               )
@@ -534,8 +531,8 @@ namespace Llvm.NET.DebugInfo
                                                , string name
                                                , DIFile file
                                                , uint line
-                                               , ulong bitSize
-                                               , ulong bitAlign
+                                               , UInt64 bitSize
+                                               , UInt32 bitAlign
                                                , DebugInfoFlags debugFlags
                                                , params DINode[ ] elements
                                                )
@@ -547,8 +544,8 @@ namespace Llvm.NET.DebugInfo
                                                , string name
                                                , DIFile file
                                                , uint line
-                                               , ulong bitSize
-                                               , ulong bitAlign
+                                               , UInt64 bitSize
+                                               , UInt32 bitAlign
                                                , DebugInfoFlags debugFlags
                                                , IEnumerable<DINode> elements
                                                )
@@ -561,9 +558,9 @@ namespace Llvm.NET.DebugInfo
                                              , string name
                                              , DIFile file
                                              , uint line
-                                             , ulong bitSize
-                                             , ulong bitAlign
-                                             , ulong bitOffset
+                                             , UInt64 bitSize
+                                             , UInt32 bitAlign
+                                             , UInt64 bitOffset
                                              , DebugInfoFlags debugFlags
                                              , DIType type
                                              )
@@ -589,7 +586,7 @@ namespace Llvm.NET.DebugInfo
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage( "Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Justification = "Specific type required by interop call" )]
-        public DICompositeType CreateArrayType( ulong bitSize, ulong bitAlign, DIType elementType, DINodeArray subscripts )
+        public DICompositeType CreateArrayType( UInt64 bitSize, UInt32 bitAlign, DIType elementType, DINodeArray subscripts )
         {
             if( elementType == null )
                 throw new ArgumentNullException( nameof( elementType ) );
@@ -601,7 +598,7 @@ namespace Llvm.NET.DebugInfo
             return MDNode.FromHandle<DICompositeType>( handle );
         }
 
-        public DICompositeType CreateArrayType( ulong bitSize, ulong bitAlign, DIType elementType, params DINode[ ] subscripts )
+        public DICompositeType CreateArrayType( UInt64 bitSize, UInt32 bitAlign, DIType elementType, params DINode[ ] subscripts )
         {
             return CreateArrayType( bitSize, bitAlign, elementType, GetOrCreateArray( subscripts ) );
         }
@@ -633,7 +630,7 @@ namespace Llvm.NET.DebugInfo
             if( buf.LongLength == 0 )
                 buf = new LLVMMetadataRef[ 1 ];
 
-            var handle = NativeMethods.DIBuilderGetOrCreateArray( BuilderHandle, out buf[ 0 ], ( ulong )actualLen );
+            var handle = NativeMethods.DIBuilderGetOrCreateArray( BuilderHandle, out buf[ 0 ], ( UInt64 )actualLen );
             return new DINodeArray( LlvmMetadata.FromHandle<MDTuple>( OwningModule.Context, handle ) );
         }
 
@@ -641,7 +638,7 @@ namespace Llvm.NET.DebugInfo
         public DITypeArray GetOrCreateTypeArray( IEnumerable<DIType> types )
         {
             var buf = types.Select( t => t?.MetadataHandle ?? LLVMMetadataRef.Zero ).ToArray( );
-            var handle = NativeMethods.DIBuilderGetOrCreateTypeArray( BuilderHandle, out buf[ 0 ], ( ulong )buf.LongLength );
+            var handle = NativeMethods.DIBuilderGetOrCreateTypeArray( BuilderHandle, out buf[ 0 ], ( UInt64 )buf.LongLength );
             return new DITypeArray( handle );
         }
 
@@ -656,8 +653,8 @@ namespace Llvm.NET.DebugInfo
                                                     , string name
                                                     , DIFile file
                                                     , uint lineNumber
-                                                    , ulong sizeInBits
-                                                    , ulong alignInBits
+                                                    , UInt64 sizeInBits
+                                                    , UInt32 alignInBits
                                                     , IEnumerable<DIEnumerator> elements
                                                     , DIType underlyingType
                                                     , string uniqueId = ""
@@ -670,7 +667,7 @@ namespace Llvm.NET.DebugInfo
                 throw new ArgumentNullException( nameof( underlyingType ) );
 
             var elementHandles = elements.Select( e => e.MetadataHandle ).ToArray( );
-            var elementArray = NativeMethods.DIBuilderGetOrCreateArray( BuilderHandle, out elementHandles[ 0 ], ( ulong )elementHandles.LongLength );
+            var elementArray = NativeMethods.DIBuilderGetOrCreateArray( BuilderHandle, out elementHandles[ 0 ], ( UInt64 )elementHandles.LongLength );
             var handle = NativeMethods.DIBuilderCreateEnumerationType( BuilderHandle
                                                                      , scope.MetadataHandle
                                                                      , name
@@ -686,15 +683,16 @@ namespace Llvm.NET.DebugInfo
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage( "Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Justification = "Specific type required by interop call" )]
-        public DIGlobalVariable CreateGlobalVariable( DINode scope
+        public DIExpression CreateGlobalVariable( DINode scope
                                                     , string name
                                                     , string linkageName
                                                     , DIFile file
                                                     , uint lineNo
                                                     , DIType type
                                                     , bool isLocalToUnit
-                                                    , Value value
+                                                    , DIExpression value
                                                     , DINode declaration = null
+                                                    , UInt32 bitAlign = 0
                                                     )
         {
             if( scope == null )
@@ -706,18 +704,19 @@ namespace Llvm.NET.DebugInfo
             if( value == null )
                 throw new ArgumentNullException( nameof( value ) );
 
-            var handle = NativeMethods.DIBuilderCreateGlobalVariable( BuilderHandle
-                                                                    , scope.MetadataHandle
-                                                                    , name
-                                                                    , linkageName
-                                                                    , file?.MetadataHandle ?? LLVMMetadataRef.Zero
-                                                                    , lineNo
-                                                                    , type.MetadataHandle
-                                                                    , isLocalToUnit
-                                                                    , value.ValueHandle
-                                                                    , declaration?.MetadataHandle ?? LLVMMetadataRef.Zero
-                                                                    );
-            return MDNode.FromHandle<DIGlobalVariable>( handle );
+            var handle = NativeMethods.DIBuilderCreateGlobalVariableExpression( BuilderHandle
+                                                                              , scope.MetadataHandle
+                                                                              , name
+                                                                              , linkageName
+                                                                              , file?.MetadataHandle ?? LLVMMetadataRef.Zero
+                                                                              , lineNo
+                                                                              , type.MetadataHandle
+                                                                              , isLocalToUnit
+                                                                              , value.MetadataHandle
+                                                                              , declaration?.MetadataHandle ?? LLVMMetadataRef.Zero
+                                                                              , bitAlign
+                                                                              );
+            return MDNode.FromHandle<DIExpression>( handle );
         }
 
         public void Finish( )
@@ -932,7 +931,7 @@ namespace Llvm.NET.DebugInfo
             if( args.Length == 0 )
                 args = new long[ 1 ];
 
-            var handle = NativeMethods.DIBuilderCreateExpression( BuilderHandle, out args[ 0 ], ( ulong )actualCount );
+            var handle = NativeMethods.DIBuilderCreateExpression( BuilderHandle, out args[ 0 ], ( UInt64 )actualCount );
             return new DIExpression( handle );
         }
 
@@ -943,8 +942,8 @@ namespace Llvm.NET.DebugInfo
                                                              , DIFile file
                                                              , uint line
                                                              , uint lang = 0
-                                                             , ulong sizeInBits = 0
-                                                             , ulong alignBits = 0
+                                                             , UInt64 sizeInBits = 0
+                                                             , UInt64 alignBits = 0
                                                              , DebugInfoFlags flags = DebugInfoFlags.None
                                                              )
         {

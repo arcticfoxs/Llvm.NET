@@ -12,11 +12,10 @@ namespace Llvm.NET
         /// <param name="path">Path of the file to load into a <see cref="MemoryBuffer"/></param>
         public MemoryBuffer( string path )
         {
-            IntPtr msg;
-            if( NativeMethods.CreateMemoryBufferWithContentsOfFile( path, out BufferHandle_, out msg ).Succeeded )
+            if( NativeMethods.CreateMemoryBufferWithContentsOfFile( path, out BufferHandle_, out string msg ).Succeeded )
                 return;
 
-            throw new InternalCodeGeneratorException( NativeMethods.MarshalMsg( msg ) );
+            throw new InternalCodeGeneratorException( msg );
         }
 
         /// <summary>Size of the buffer</summary>
@@ -27,7 +26,7 @@ namespace Llvm.NET
                 if( BufferHandle.Pointer == IntPtr.Zero )
                     return 0;
 
-                return NativeMethods.GetBufferSize( BufferHandle );
+                return NativeMethods.GetBufferSize( BufferHandle ).Pointer.ToInt32();
             }
         }
 

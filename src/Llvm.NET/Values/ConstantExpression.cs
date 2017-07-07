@@ -44,7 +44,7 @@ namespace Llvm.NET.Values
         public static Constant GetElementPtr(Constant value, IEnumerable<Constant> args)
         {
             var llvmArgs = InstructionBuilder.GetValidatedGEPArgs(value, args);
-            var handle = NativeMethods.ConstGEP(value.ValueHandle, out llvmArgs[0], (uint)llvmArgs.Length);
+            var handle = NativeMethods.ConstGEP( value.ValueHandle, out llvmArgs[0], (uint)llvmArgs.Length);
             return FromHandle<Constant>(handle);
         }
 

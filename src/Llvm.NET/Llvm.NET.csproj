@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Llvm.NET</RootNamespace>
     <AssemblyName>Llvm.NET</AssemblyName>
-    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -136,7 +136,9 @@
     <Compile Include="Instructions\UserOp1.cs" />
     <Compile Include="Instructions\UserOp2.cs" />
     <Compile Include="Instructions\VaArg.cs" />
-    <Compile Include="LLVM\LlvmHandles.cs" />
+    <Compile Include="LLVM\GeneratedCodeExtensions.cs" />
+    <Compile Include="LLVM\MessageMarshaler.cs" />
+    <Compile Include="LLVM\ValueKind.cs" />
     <Compile Include="LLVM\WrappedNativeCallback.cs" />
     <Compile Include="Metadata\ConstantAsMetadata.cs" />
     <Compile Include="Metadata\LocalAsMetadata.cs" />
@@ -156,7 +158,7 @@
     <Compile Include="Types\ArrayType.cs" />
     <Compile Include="Values\AttributeBuilder.cs" />
     <Compile Include="Values\AttributeKindExtensions.cs" />
-    <Compile Include="Values\AttributeSetContainer.cs" />
+    <Compile Include="Values\AttributeContainerMixins.cs" />
     <Compile Include="Values\AttributeValue.cs" />
     <Compile Include="Values\BasicBlock.cs" />
     <Compile Include="Values\BlockAddress.cs" />
@@ -221,11 +223,9 @@
     <Compile Include="Instructions\UnaryInstruction.cs" />
     <Compile Include="Instructions\ZeroExtend.cs" />
     <Compile Include="LLVM\Generated.cs" />
-    <Compile Include="LLVM\GeneratedExtensions.cs" />
-    <Compile Include="LLVM\LLVMNative.cs" />
+    <Compile Include="LLVM\CustomGenerated.cs" />
     <Compile Include="MemoryBuffer.cs" />
     <Compile Include="Module.cs" />
-    <Compile Include="NativeMethods.cs" />
     <Compile Include="Values\FunctionParameterList.cs" />
     <Compile Include="PassManagerBuilder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -237,8 +237,10 @@
     <Compile Include="DataLayout.cs" />
     <Compile Include="Types\TypeRef.cs" />
     <Compile Include="Values\AttributeSet.cs" />
+    <Compile Include="Values\IAttributeCollection.cs" />
     <Compile Include="Values\IAttributeSetContainer.cs" />
     <Compile Include="Values\InlineAsm.cs" />
+    <Compile Include="Values\IValueWithAttributes.cs" />
     <Compile Include="Values\UndefValue.cs" />
     <Compile Include="Values\Use.cs" />
     <Compile Include="Values\User.cs" />
@@ -246,6 +248,8 @@
     <Compile Include="Values\Value.cs" />
     <Compile Include="Types\PointerType.cs" />
     <Compile Include="Types\VectorType.cs" />
+    <Compile Include="Values\ValueAttributes.cs" />
+    <Compile Include="Values\ValueAttributeSet.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LibLLVM\LibLLVM.vcxproj">

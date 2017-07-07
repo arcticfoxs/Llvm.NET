@@ -13,7 +13,7 @@ namespace Llvm.NET
     /// <summary>LLVM Bitcode module</summary>
     /// <remarks>
     /// A module is the basic unit for containing code in LLVM. Modules are an in memory
-    /// representation of the LLVM bit-code. 
+    /// representation of the LLVM bit-code.
     /// </remarks>
     public sealed class NativeModule
         : IDisposable
@@ -220,7 +220,7 @@ namespace Llvm.NET
 
         /// <summary>Target data layout for this module</summary>
         /// <remarks>The layout is produced by parsing the <see cref="DataLayoutString"/>
-        /// therefore this property changes anytime the <see cref="DataLayoutString"/> is 
+        /// therefore this property changes anytime the <see cref="DataLayoutString"/> is
         /// set. Furthermore, setting this property will change the value of <see cref="DataLayoutString"/>.
         /// In other words, Layout and <see cref="DataLayoutString"/> are two different views
         /// of the same information.
@@ -302,12 +302,12 @@ namespace Llvm.NET
             if( otherModule.Context != Context )
                 throw new ArgumentException( "Linking modules with different contexts is not allowed", nameof( otherModule ) );
 
-            if( !NativeMethods.LinkModules( ModuleHandle, otherModule.ModuleHandle ).Succeeded )
+            if( !NativeMethods.LinkModules2( ModuleHandle, otherModule.ModuleHandle ).Succeeded )
             {
                 throw new InternalCodeGeneratorException( "Module link error" );
             }
             Context.RemoveModule( otherModule );
-            otherModule.ModuleHandle = LLVMModuleRef.Zero;
+            otherModule.ModuleHandle = new LLVMModuleRef( IntPtr.Zero );
         }
 
         /// <summary>Run optimization passes on the module</summary>
@@ -332,13 +332,10 @@ namespace Llvm.NET
         /// <returns>true if the verification succeeded and false if not.</returns>
         public bool Verify( out string errmsg )
         {
-            errmsg = null;
-            IntPtr msgPtr;
-            LLVMBool result = NativeMethods.VerifyModule( ModuleHandle, LLVMVerifierFailureAction.LLVMReturnStatusAction, out msgPtr );
+            LLVMBool result = NativeMethods.VerifyModule( ModuleHandle, LLVMVerifierFailureAction.LLVMReturnStatusAction, out errmsg );
             if( result.Succeeded )
                 return true;
 
-            errmsg = NativeMethods.MarshalMsg( msgPtr );
             return false;
         }
 
@@ -392,11 +389,9 @@ namespace Llvm.NET
         public bool WriteToTextFile( string path, out string errMsg )
         {
             errMsg = string.Empty;
-            IntPtr msg;
-            if( NativeMethods.PrintModuleToFile( ModuleHandle, path, out msg ).Succeeded )
+            if( NativeMethods.PrintModuleToFile( ModuleHandle, path, out errMsg ).Succeeded )
                 return true;
 
-            errMsg = NativeMethods.MarshalMsg( msg );
             return false;
         }
 
@@ -408,7 +403,7 @@ namespace Llvm.NET
         /// an extremely long time (up to many seconds depending on complexity
         /// of the module) which is bad for the debugger.
         /// </remarks>
-        public string WriteToString( ) => NativeMethods.MarshalMsg( NativeMethods.PrintModuleToString( ModuleHandle ) );
+        public string WriteToString( ) => NativeMethods.PrintModuleToString( ModuleHandle );
 
         public MemoryBuffer WriteToBuffer()
         {
@@ -588,7 +583,7 @@ namespace Llvm.NET
         /// <returns>New node with the string as <see cref="MDNode.Operands"/>[0] (as an MDString)</returns>
         public MDNode CreateMDNode( string value )
         {
-            var elements = new LLVMMetadataRef[ ] { NativeMethods.MDString2( Context.ContextHandle, value, ( uint )(value?.Length ?? 0 ) ) };
+            var elements = new LLVMMetadataRef[ ] { NativeMethods.MDString2( Context.ContextHandle, value, ( uint )( value?.Length ?? 0 ) ) };
             var hNode = NativeMethods.MDNode2( Context.ContextHandle, out elements[ 0 ], ( uint )elements.Length );
             return MDNode.FromHandle<MDNode>( hNode );
         }
@@ -746,11 +741,8 @@ namespace Llvm.NET
             if( context == null )
                 throw new ArgumentNullException( nameof( buffer ) );
 
-            LLVMModuleRef modRef;
-            IntPtr errMsgPtr;
-            if( NativeMethods.ParseBitcodeInContext( context.ContextHandle, buffer.BufferHandle, out modRef, out errMsgPtr ).Failed )
+            if( NativeMethods.ParseBitcodeInContext( context.ContextHandle, buffer.BufferHandle, out LLVMModuleRef modRef, out string errMsg ).Failed )
             {
-                var errMsg = NativeMethods.MarshalMsg( errMsgPtr );
                 throw new InternalCodeGeneratorException( errMsg );
             }
             return context.GetModuleFor( modRef );

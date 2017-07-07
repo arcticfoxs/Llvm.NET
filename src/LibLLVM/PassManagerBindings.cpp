@@ -69,16 +69,19 @@ extern "C"
     void LLVMInitializeCodeGenForOpt( LLVMPassRegistryRef R )
     {
         PassRegistry& Registry = *unwrap( R );
+        initializeScalarizeMaskedMemIntrinPass( Registry );
         initializeCodeGenPreparePass( Registry );
         initializeAtomicExpandPass( Registry );
-        initializeRewriteSymbolsPass( Registry );
+        initializeRewriteSymbolsLegacyPassPass( Registry );
         initializeWinEHPreparePass( Registry );
         initializeDwarfEHPreparePass( Registry );
-        initializeSafeStackPass( Registry );
+        initializeSafeStackLegacyPassPass( Registry );
         initializeSjLjEHPreparePass( Registry );
         initializePreISelIntrinsicLoweringLegacyPassPass( Registry );
         initializeGlobalMergePass( Registry );
         initializeInterleavedAccessPass( Registry );
+        initializeCountingFunctionInserterPass( Registry );
         initializeUnreachableBlockElimLegacyPassPass( Registry );
+        initializeExpandReductionsPass( Registry );
     }
 }

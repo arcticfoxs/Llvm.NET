@@ -150,11 +150,7 @@ namespace Llvm.NET
             return NativeMethods.OffsetOfElement( DataLayoutHandle, structType.GetTypeRef( ), element );
         }
 
-        public override string ToString( )
-        {
-            IntPtr msgPtr = NativeMethods.CopyStringRepOfTargetData( DataLayoutHandle );
-            return NativeMethods.MarshalMsg( msgPtr );
-        }
+        public override string ToString( ) => NativeMethods.CopyStringRepOfTargetData( DataLayoutHandle );
 
         public ulong ByteSizeOf( ITypeRef llvmType ) => BitSizeOf( llvmType ) / 8u;
 
@@ -210,12 +206,12 @@ namespace Llvm.NET
             Context = context;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage( "Microsoft.Reliability", "CA2000:Dispose objects before losing scope" )]
         internal static DataLayout FromHandle( Context context, LLVMTargetDataRef targetDataRef, bool isDisposable )
         {
             lock ( TargetDataMap )
             {
-                DataLayout retVal;
-                if( TargetDataMap.TryGetValue( targetDataRef.Pointer, out retVal ) )
+                if( TargetDataMap.TryGetValue( targetDataRef.Pointer, out DataLayout retVal ) )
                     return retVal;
 
                 retVal = new DataLayout( context, targetDataRef, isDisposable );
